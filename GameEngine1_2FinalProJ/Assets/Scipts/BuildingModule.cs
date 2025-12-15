@@ -19,11 +19,18 @@ public class BuildingModule : MonoBehaviour
 
         Vector3 targetPos = hit.transform.position + hit.normal;
 
+        // 플레이어와 너무 가까우면 설치 불가 (끼임 방지)
         if (Vector3.Distance(transform.position, targetPos) < 1.2f) return;
 
+        // 1. 맵에 블록 설치
         map.PlaceBlockAt(targetPos, blockID);
 
-        nextBuildTime = Time.time + buildCooldown;
+        // 2. ★ 추가된 부분: 인벤토리에서 현재 선택된 아이템 1개 소비
+        if (InventoryManager.Instance != null)
+        {
+            InventoryManager.Instance.ConsumeSelectedOne();
+        }
 
+        nextBuildTime = Time.time + buildCooldown;
     }
 }
