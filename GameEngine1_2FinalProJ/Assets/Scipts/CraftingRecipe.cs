@@ -6,8 +6,8 @@ using UnityEngine;
 public class CraftingRecipe : ScriptableObject
 {
     [Header("Result")]
-    public ItemData resultItem; // 결과물 아이템
-    public int resultCount = 1; // 결과물 개수
+    public ItemData resultItem; 
+    public int resultCount = 1;
 
     [Header("Ingredients")]
     public List<Ingredient> ingredients = new List<Ingredient>();
@@ -15,7 +15,7 @@ public class CraftingRecipe : ScriptableObject
     [Serializable]
     public struct Ingredient
     {
-        public ItemData item; // 필요 재료
-        public int count;     // 필요 개수
+        public ItemData item; 
+        public int count;  
     }
 }

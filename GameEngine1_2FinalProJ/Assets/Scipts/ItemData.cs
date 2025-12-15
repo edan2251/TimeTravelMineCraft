@@ -13,13 +13,11 @@ public class ItemData : ScriptableObject
     public int maxStack = 64;
 
     [Header("Visuals")]
-    // ★ 여기가 핵심: 드롭되거나 손에 들었을 때 보일 프리팹
-    // 블록이면 BlockPrefab을, 도구면 ToolPrefab을 여기에 넣으세요.
     public GameObject dropModel;
 
     [Header("Action Settings")]
     public bool isPlaceable;
-    public int blockID; // MapGenerator용 ID
+    public int blockID; 
 
     public bool isTool;
     public int toolDamage = 1;
