@@ -40,6 +40,8 @@ public class MapGenerator : MonoBehaviour
     const int STABILIZER_ID = 11;
     const int LOG_ID = 9;
     const int LEAVES_ID = 10;
+    const int SAPLING_ID = 13;
+    const int SUN_FRUIT_ID = 12;
 
     // 시드값 저장 변수
     private float seedX;
@@ -206,49 +208,51 @@ public class MapGenerator : MonoBehaviour
     // ★ 나무 생성 로직 추가
     void GenerateTrees()
     {
-        // 아침 맵에서만 생성
         if (currentMapType != MapType.Morning) return;
+
+        int treeSeed = Mathf.FloorToInt(seedX + seedZ);
+        System.Random prng = new System.Random(treeSeed);
 
         for (int x = 2; x < width - 2; x++)
         {
             for (int z = 2; z < depth - 2; z++)
             {
-                // 1% 확률로 나무 심기
-                if (Random.value > 0.01f) continue;
+                if (prng.NextDouble() > 0.01f) continue;
 
-                // 해당 위치의 지표면 찾기
                 int surfaceY = -1;
                 for (int y = maxHeight; y >= 0; y--)
                 {
-                    if (mapData[x, y, z] != AIR_ID && mapData[x, y, z] != 3) // 공기도 아니고 물도 아닌 땅
+                    if (mapData[x, y, z] != AIR_ID && mapData[x, y, z] != 3)
                     {
                         surfaceY = y;
                         break;
                     }
                 }
 
-                // 잔디(1) 위에만 심기
                 if (surfaceY > 0 && mapData[x, surfaceY, z] == 1)
                 {
-                    SpawnSingleTree(x, surfaceY + 1, z);
+                    int height = prng.Next(4, 7);
+                    // ★ record = false (자연 나무는 저장 불필요)
+                    SpawnSingleTree(x, surfaceY + 1, z, height, false, false);
                 }
             }
         }
     }
 
-    void SpawnSingleTree(int rootX, int rootY, int rootZ)
+    void SpawnSingleTree(int rootX, int rootY, int rootZ, int treeHeight, bool hasFruit = false, bool record = false)
     {
-        int treeHeight = Random.Range(4, 6);
-
         // 1. 기둥 (Log #9)
         for (int i = 0; i < treeHeight; i++)
         {
             int y = rootY + i;
             if (IsIdxValid(rootX, y, rootZ))
             {
-                // 이미 다른 블록(유지기 등)이 없으면 설치
-                if (mapData[rootX, y, rootZ] == AIR_ID || mapData[rootX, y, rootZ] == 10)
-                    mapData[rootX, y, rootZ] = LOG_ID;
+                // 공기, 나뭇잎, 묘목 자리면 기둥 설치
+                int current = mapData[rootX, y, rootZ];
+                if (current == AIR_ID || current == LEAVES_ID || current == SAPLING_ID)
+                {
+                    PlaceTreeBlock(rootX, y, rootZ, LOG_ID, record);
+                }
             }
         }
 
@@ -264,16 +268,48 @@ public class MapGenerator : MonoBehaviour
                 {
                     if (!IsIdxValid(x, y, z)) continue;
 
-                    // 빈 공간(Air)일 때만 잎 생성
-                    if (mapData[x, y, z] != AIR_ID) continue;
-
-                    float dist = Vector3.Distance(new Vector3(rootX, y - 1, rootZ), new Vector3(x, y, z));
-                    if (dist <= 2.5f)
+                    // 빈 공간일 때만 잎 생성 (기둥 덮어쓰기 방지)
+                    if (mapData[x, y, z] == AIR_ID)
                     {
-                        mapData[x, y, z] = LEAVES_ID;
+                        float dist = Vector3.Distance(new Vector3(rootX, y - 1, rootZ), new Vector3(x, y, z));
+                        if (dist <= 2.5f)
+                        {
+                            PlaceTreeBlock(x, y, z, LEAVES_ID, record);
+                        }
                     }
                 }
             }
+        }
+
+        // 3. 태양 열매 (Sun Fruit #12)
+        if (hasFruit)
+        {
+            int fruitCount = Random.Range(1, 3);
+            int attempts = 0;
+            while (fruitCount > 0 && attempts < 10)
+            {
+                int fx = Random.Range(rootX - 1, rootX + 2);
+                int fz = Random.Range(rootZ - 1, rootZ + 2);
+                int fy = Random.Range(leafStart, leafEnd);
+
+                if (IsIdxValid(fx, fy, fz) && mapData[fx, fy, fz] == LEAVES_ID)
+                {
+                    PlaceTreeBlock(fx, fy, fz, SUN_FRUIT_ID, record);
+                    fruitCount--;
+                }
+                attempts++;
+            }
+        }
+    }
+
+    void PlaceTreeBlock(int x, int y, int z, int id, bool record)
+    {
+        mapData[x, y, z] = id;
+
+        // 묘목에서 자란 나무라면 GameManager에 영구 저장!
+        if (record && GameManager.Instance != null)
+        {
+            GameManager.Instance.RecordPlacedBlock(currentMapType, new Vector3Int(x, y, z), id);
         }
     }
 
@@ -336,13 +372,28 @@ public class MapGenerator : MonoBehaviour
             {
                 for (int y = 0; y <= maxHeight; y++)
                 {
-                    // GameManager에게 "여기에 설치된 블록 있나요?" 물어봄
                     int placedID = GameManager.Instance.GetPlacedBlockID(currentMapType, x, y, z);
 
-                    // 설치된 게 있다면 (-1이 아니면)
                     if (placedID != AIR_ID)
                     {
-                        mapData[x, y, z] = placedID; // 맵 데이터 덮어쓰기
+                        if (placedID == SAPLING_ID)
+                        {
+                            SaplingInfo info = GameManager.Instance.GetSaplingInfo(currentMapType, new Vector3Int(x, y, z));
+
+                            if (info != null && info.isGrown)
+                            {
+                                // 1. 묘목 데이터 삭제
+                                GameManager.Instance.RemovePlacedBlockRecord(currentMapType, new Vector3Int(x, y, z));
+
+                                // 2. 나무 생성 (★ record = true 로 설정해서 저장!)
+                                bool hasFruit = (info.plantedTime == MapType.Noon);
+                                SpawnSingleTree(x, y, z, Random.Range(4, 7), hasFruit, true);
+
+                                continue;
+                            }
+                        }
+
+                        mapData[x, y, z] = placedID;
                     }
                 }
             }

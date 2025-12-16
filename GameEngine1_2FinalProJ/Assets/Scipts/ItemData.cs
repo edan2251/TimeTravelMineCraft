@@ -21,6 +21,8 @@ public class ItemData : ScriptableObject
 
     [Header("Drop Settings")]
     public bool dropsOnBreak = true;
+    [Range(0f, 1f)]
+    public float dropChance = 1.0f;
 
     [Header("Tool Settings")]
     public bool isTool;

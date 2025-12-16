@@ -53,9 +53,14 @@ public class PlayerInteraction : MonoBehaviour
 
         if (Input.GetKey(KeyCode.Q) && Time.time >= nextDropTime)
         {
-            nextDropTime = Time.time + dropRate; 
+            nextDropTime = Time.time + dropRate;
 
-            Vector3 spawnPos = cam.transform.position + (cam.transform.forward * 0.5f);
+            // ★ 수정 전: 0.5f -> 너무 가까움 (몸 속에서 생성됨)
+            // Vector3 spawnPos = cam.transform.position + (cam.transform.forward * 0.5f);
+
+            // ★ 수정 후: 1.5f -> 팔을 뻗은 정도 거리에서 생성
+            Vector3 spawnPos = cam.transform.position + (cam.transform.forward * 1f);
+
             Vector3 throwDir = cam.transform.forward;
 
             InventoryManager.Instance.DropOneFromSelected(spawnPos, throwDir);

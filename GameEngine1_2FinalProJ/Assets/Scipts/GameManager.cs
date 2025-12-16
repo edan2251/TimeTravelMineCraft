@@ -2,6 +2,15 @@ using UnityEngine;
 using System.Collections.Generic;
 using TMPro;
 
+// 묘목 정보를 저장할 간단한 클래스
+[System.Serializable]
+public class SaplingInfo
+{
+    public Vector3Int position; // 심은 위치
+    public MapType plantedTime; // 언제 심었는지 (Morning? Noon?)
+    public bool isGrown;        // 다 자랐는지 여부
+}
+
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
@@ -24,6 +33,11 @@ public class GameManager : MonoBehaviour
     private Dictionary<MapType, HashSet<Vector3Int>> brokenBlocks = new Dictionary<MapType, HashSet<Vector3Int>>();
 
     private Dictionary<MapType, Dictionary<Vector3Int, int>> placedBlocks = new Dictionary<MapType, Dictionary<Vector3Int, int>>();
+
+    public List<SaplingInfo> plantedSaplings = new List<SaplingInfo>();
+
+    // 상수 (묘목 ID) - 13번을 묘목으로 쓰기로 했죠?
+    const int SAPLING_ID = 13;
 
     [Header("Debug")]
     public float stabilizerRange = 5f; // 범위값 변수화 (나중에 조절하기 편하게)
@@ -67,6 +81,11 @@ public class GameManager : MonoBehaviour
         else
             placedBlocks[time].Add(pos, blockID);
 
+        if (blockID == SAPLING_ID)
+        {
+            RegisterSapling(time, pos);
+        }
+
         // 중요: 만약 이 자리가 '파괴된 기록'이 있었다면, 다시 설치했으니 파괴 기록은 지워줌
         if (IsBlockBroken(time, pos.x, pos.y, pos.z))
         {
@@ -78,6 +97,13 @@ public class GameManager : MonoBehaviour
     {
         if (placedBlocks.ContainsKey(time) && placedBlocks[time].ContainsKey(pos))
         {
+            // ★ 추가: 블록을 지울 때 그게 묘목이었다면 묘목 리스트에서도 삭제
+            int id = placedBlocks[time][pos];
+            if (id == SAPLING_ID)
+            {
+                RemoveSapling(time, pos);
+            }
+
             placedBlocks[time].Remove(pos);
         }
     }
@@ -109,6 +135,8 @@ public class GameManager : MonoBehaviour
 
     public void GoToNextTime()
     {
+        GrowSaplings();
+
         switch (currentTime)
         {
             case MapType.Morning: currentTime = MapType.Noon; break;
@@ -181,6 +209,80 @@ public class GameManager : MonoBehaviour
             return brokenBlocks[time].Contains(new Vector3Int(x, y, z));
         }
         return false;
+    }
+
+    void GrowSaplings()
+    {
+        // 리스트를 거꾸로 돌면서 삭제가 가능하게 함
+        for (int i = plantedSaplings.Count - 1; i >= 0; i--)
+        {
+            SaplingInfo sapling = plantedSaplings[i];
+
+            if (!sapling.isGrown)
+            {
+                // ★ 추가: 낮(Noon)에 심은 묘목은 30% 확률로만 성공
+                if (sapling.plantedTime == MapType.Noon)
+                {
+                    float chance = Random.value; // 0.0 ~ 1.0
+
+                    if (chance <= 0.7f)
+                    {
+                        // 30% 성공: 성장!
+                        sapling.isGrown = true;
+                        Debug.Log($"[성공] 묘목이 혹독한 태양을 견뎌냈습니다! ({sapling.position})");
+                    }
+                    else
+                    {
+                        // 70% 실패: 묘목 파괴 (증발)
+                        // 1. 설치된 블록 기록(PlacedBlocks)에서 지우기
+                        if (placedBlocks.ContainsKey(MapType.Noon))
+                        {
+                            placedBlocks[MapType.Noon].Remove(sapling.position);
+                        }
+
+                        // 2. 묘목 리스트에서 지우기
+                        plantedSaplings.RemoveAt(i);
+
+                        Debug.Log($"[실패] 묘목이 말라 죽었습니다... ({sapling.position})");
+                    }
+                }
+                else
+                {
+                    // 아침이나 다른 시간대는 100% 성장 (기존 로직)
+                    sapling.isGrown = true;
+                }
+            }
+        }
+    }
+
+    // ★ 묘목 등록 (MapGenerator에서 호출)
+    public void RegisterSapling(MapType time, Vector3Int pos)
+    {
+        // 중복 등록 방지
+        if (plantedSaplings.Exists(x => x.position == pos && x.plantedTime == time)) return;
+
+        SaplingInfo newSapling = new SaplingInfo();
+        newSapling.position = pos;
+        newSapling.plantedTime = time;
+        newSapling.isGrown = false; // 처음 심으면 안 자란 상태
+
+        plantedSaplings.Add(newSapling);
+    }
+
+    // ★ 묘목 제거 (자라서 나무가 되거나, 플레이어가 캐버렸을 때)
+    public void RemoveSapling(MapType time, Vector3Int pos)
+    {
+        SaplingInfo target = plantedSaplings.Find(x => x.position == pos && x.plantedTime == time);
+        if (target != null)
+        {
+            plantedSaplings.Remove(target);
+        }
+    }
+
+    // ★ 묘목 상태 확인 (MapGenerator가 맵 그릴 때 물어봄)
+    public SaplingInfo GetSaplingInfo(MapType time, Vector3Int pos)
+    {
+        return plantedSaplings.Find(x => x.position == pos && x.plantedTime == time);
     }
 
     private void OnDrawGizmos()

@@ -34,7 +34,6 @@ public class DroppedItem : MonoBehaviour
             {
                 Destroy(script);
             }
-
         }
 
         Rigidbody rb = GetComponent<Rigidbody>();
