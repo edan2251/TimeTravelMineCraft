@@ -9,10 +9,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6725477740662816942}
+  - component: {fileID: 8720925032693286718}
   - component: {fileID: 1976362257213439879}
   - component: {fileID: 1614650897909850}
   - component: {fileID: 4985846042107713961}
-  - component: {fileID: 8720925032693286718}
   m_Layer: 6
   m_Name: 2_Stone
   m_TagString: Untagged
@@ -35,6 +35,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8720925032693286718
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6863273285592310657}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9060e6542957e940ad419cb6b67d385, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  myItemData: {fileID: 11400000, guid: 6ba10c0e5d4e53c4bbf29de810a580af, type: 2}
+  maxHP: 3
+  currentHP: 0
 --- !u!33 &1976362257213439879
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -106,18 +121,3 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &8720925032693286718
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6863273285592310657}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d9060e6542957e940ad419cb6b67d385, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  myItemData: {fileID: 11400000, guid: 6ba10c0e5d4e53c4bbf29de810a580af, type: 2}
-  maxHP: 3
-  currentHP: 0

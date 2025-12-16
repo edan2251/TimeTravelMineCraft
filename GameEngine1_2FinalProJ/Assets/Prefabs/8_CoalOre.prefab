@@ -9,12 +9,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3473530900345892896}
-  - component: {fileID: -8712228775269748950}
+  - component: {fileID: -2785924298298260462}
   - component: {fileID: 6844415610528302180}
   - component: {fileID: 1956237275276489883}
   - component: {fileID: 5658057008699365327}
   m_Layer: 6
-  m_Name: 6_VoidStone
+  m_Name: 8_CoalOre
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -35,7 +35,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &-8712228775269748950
+--- !u!114 &-2785924298298260462
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -47,7 +47,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9060e6542957e940ad419cb6b67d385, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  myItemData: {fileID: 11400000, guid: 5a531d17fd98010469a7b9fcb02bed3e, type: 2}
+  myItemData: {fileID: 11400000, guid: 106543b126b2ddd45b067545ef743dd5, type: 2}
   maxHP: 3
   currentHP: 0
 --- !u!33 &6844415610528302180
@@ -78,7 +78,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 87844afb1643f3b438463a810ef12c90, type: 2}
+  - {fileID: 2100000, guid: 741d697a176e45b43bb9c1708042bbf3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 6538846858495705387}
   - component: {fileID: 9069381973715714388}
   m_Layer: 5
-  m_Name: Recipe_Select
+  m_Name: UI_Recipe_Select
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

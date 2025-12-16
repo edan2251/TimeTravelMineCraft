@@ -9,10 +9,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3153780021564235321}
+  - component: {fileID: -4373904614068711210}
   - component: {fileID: 1339426423296336505}
   - component: {fileID: 5459494768274666567}
   - component: {fileID: 5396525672256530126}
-  - component: {fileID: -4373904614068711210}
   m_Layer: 6
   m_Name: 7_IronOre
   m_TagString: Untagged
@@ -35,6 +35,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &-4373904614068711210
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5801738847966668720}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9060e6542957e940ad419cb6b67d385, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  myItemData: {fileID: 11400000, guid: 54a05d16245369d4abd649668e537d7c, type: 2}
+  maxHP: 3
+  currentHP: 0
 --- !u!33 &1339426423296336505
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -106,18 +121,3 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &-4373904614068711210
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5801738847966668720}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d9060e6542957e940ad419cb6b67d385, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  myItemData: {fileID: 0}
-  maxHP: 3
-  currentHP: 0

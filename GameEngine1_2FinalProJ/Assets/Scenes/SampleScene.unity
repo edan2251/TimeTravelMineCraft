@@ -2269,8 +2269,8 @@ MonoBehaviour:
   - {fileID: 4641873546236802992, guid: de40d4125b04ad744873e23c04bcc37f, type: 3}
   - {fileID: 5801738847966668720, guid: 49e33cff8d096e341890df090efe2429, type: 3}
   - {fileID: 4641873546236802992, guid: d691745c0304eeb4da617dbe8c2ad7de, type: 3}
-  - {fileID: 4641873546236802992, guid: d691745c0304eeb4da617dbe8c2ad7de, type: 3}
-  - {fileID: 4641873546236802992, guid: d691745c0304eeb4da617dbe8c2ad7de, type: 3}
+  - {fileID: 4641873546236802992, guid: 1c60535373f600647a3b3025cd4c95a2, type: 3}
+  - {fileID: 4641873546236802992, guid: a7aa31aa657a4874f881dff6962de4e9, type: 3}
   - {fileID: 4641873546236802992, guid: 33bcd653ced51b34f804c14bb46735b8, type: 3}
   playerTransform: {fileID: 557942108}
   blockLayer:
