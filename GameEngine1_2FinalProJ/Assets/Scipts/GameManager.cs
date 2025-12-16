@@ -23,6 +23,8 @@ public class GameManager : MonoBehaviour
 
     private Dictionary<MapType, HashSet<Vector3Int>> brokenBlocks = new Dictionary<MapType, HashSet<Vector3Int>>();
 
+    private Dictionary<MapType, Dictionary<Vector3Int, int>> placedBlocks = new Dictionary<MapType, Dictionary<Vector3Int, int>>();
+
     [Header("Debug")]
     public float stabilizerRange = 5f; // 범위값 변수화 (나중에 조절하기 편하게)
     public bool showGizmos = true;
@@ -54,6 +56,43 @@ public class GameManager : MonoBehaviour
             GiveCheatItem();
         }
     }
+
+    public void RecordPlacedBlock(MapType time, Vector3Int pos, int blockID)
+    {
+        if (!placedBlocks.ContainsKey(time)) placedBlocks[time] = new Dictionary<Vector3Int, int>();
+
+        // 이미 있으면 덮어쓰기, 없으면 추가
+        if (placedBlocks[time].ContainsKey(pos))
+            placedBlocks[time][pos] = blockID;
+        else
+            placedBlocks[time].Add(pos, blockID);
+
+        // 중요: 만약 이 자리가 '파괴된 기록'이 있었다면, 다시 설치했으니 파괴 기록은 지워줌
+        if (IsBlockBroken(time, pos.x, pos.y, pos.z))
+        {
+            brokenBlocks[time].Remove(pos);
+        }
+    }
+
+    public void RemovePlacedBlockRecord(MapType time, Vector3Int pos)
+    {
+        if (placedBlocks.ContainsKey(time) && placedBlocks[time].ContainsKey(pos))
+        {
+            placedBlocks[time].Remove(pos);
+        }
+    }
+
+    // ★ 추가: 맵 생성기가 "여기에 플레이어가 뭐 설치했나요?" 물어볼 때
+    public int GetPlacedBlockID(MapType time, int x, int y, int z)
+    {
+        Vector3Int pos = new Vector3Int(x, y, z);
+        if (placedBlocks.ContainsKey(time) && placedBlocks[time].ContainsKey(pos))
+        {
+            return placedBlocks[time][pos];
+        }
+        return -1; // -1은 "설치된 거 없음" 의미 (MapGenerator의 AIR_ID와 맞춤)
+    }
+
     void GiveCheatItem()
     {
         if (stabilizerItemData != null && InventoryManager.Instance != null)

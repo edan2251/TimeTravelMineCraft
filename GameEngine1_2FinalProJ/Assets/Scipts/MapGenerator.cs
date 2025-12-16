@@ -96,6 +96,9 @@ public class MapGenerator : MonoBehaviour
         // 5. 파괴된 블록 반영 (구멍 뚫기)
         ApplyBrokenBlocks();
 
+        //6. 설치한 블록 덮어쓰기
+        ApplyPlacedBlocks();
+
         // 6. 실제 프리팹 생성
         int blockCount = 0;
         for (int x = 0; x < width; x++)
@@ -323,20 +326,50 @@ public class MapGenerator : MonoBehaviour
         }
     }
 
+    void ApplyPlacedBlocks()
+    {
+        if (GameManager.Instance == null) return;
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int z = 0; z < depth; z++)
+            {
+                for (int y = 0; y <= maxHeight; y++)
+                {
+                    // GameManager에게 "여기에 설치된 블록 있나요?" 물어봄
+                    int placedID = GameManager.Instance.GetPlacedBlockID(currentMapType, x, y, z);
+
+                    // 설치된 게 있다면 (-1이 아니면)
+                    if (placedID != AIR_ID)
+                    {
+                        mapData[x, y, z] = placedID; // 맵 데이터 덮어쓰기
+                    }
+                }
+            }
+        }
+    }
     public void PlaceBlockAt(Vector3 worldPos, int blockID)
     {
         Vector3Int coord = WorldToGrid(worldPos);
         if (!IsIdxValid(coord.x, coord.y, coord.z)) return;
 
-        // 이미 블록이 있으면 설치 불가 (공기가 아니면)
-        if (mapData[coord.x, coord.y, coord.z] != AIR_ID) return;
+        // 공기가 아니면 설치 불가 (단, 물 같은 통과 가능한 블록은 교체 가능하게 할 수도 있음)
+        if (mapData[coord.x, coord.y, coord.z] != AIR_ID && mapData[coord.x, coord.y, coord.z] != 3) return;
 
+        // 1. 맵 데이터 갱신
         mapData[coord.x, coord.y, coord.z] = blockID;
         SpawnBlockObj(coord.x, coord.y, coord.z, blockID);
 
+        // 2. 유지기 처리
         if (blockID == STABILIZER_ID && GameManager.Instance != null)
         {
             GameManager.Instance.AddStabilizer(coord);
+        }
+
+        // 3. ★ 핵심: GameManager에 "설치됨" 기록!
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.RecordPlacedBlock(currentMapType, coord, blockID);
         }
     }
 
@@ -346,10 +379,9 @@ public class MapGenerator : MonoBehaviour
         if (!IsIdxValid(coord.x, coord.y, coord.z)) return;
 
         int currentID = mapData[coord.x, coord.y, coord.z];
-
-        // 공기(-1)면 삭제 불가
         if (currentID == AIR_ID) return;
 
+        // 1. 유지기 해제
         if (currentID == STABILIZER_ID && GameManager.Instance != null)
         {
             GameManager.Instance.RemoveStabilizer(coord);
@@ -357,11 +389,21 @@ public class MapGenerator : MonoBehaviour
 
         if (GameManager.Instance != null)
         {
-            GameManager.Instance.RecordBrokenBlock(currentMapType, coord);
+            // 2. ★ 핵심: 이게 "유저가 설치한 블록"인가? "자연 블록"인가?
+            // 유저가 설치했던 기록이 있다면 -> 설치 목록에서 제거
+            if (GameManager.Instance.GetPlacedBlockID(currentMapType, coord.x, coord.y, coord.z) != AIR_ID)
+            {
+                GameManager.Instance.RemovePlacedBlockRecord(currentMapType, coord);
+            }
+            else
+            {
+                // 기록이 없다면 자연 블록임 -> "파괴됨" 목록에 추가
+                GameManager.Instance.RecordBrokenBlock(currentMapType, coord);
+            }
         }
 
-        mapData[coord.x, coord.y, coord.z] = AIR_ID; // ★ 공기(-1)로 변경
-
+        // 3. 데이터 삭제 및 갱신
+        mapData[coord.x, coord.y, coord.z] = AIR_ID;
         UpdateChunkAt(coord.x, coord.y, coord.z);
     }
 

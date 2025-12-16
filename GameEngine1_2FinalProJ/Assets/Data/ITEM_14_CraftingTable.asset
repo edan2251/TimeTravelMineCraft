@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ad8342130f29af4f93b03d7989f67f8, type: 3}
+  m_Name: ITEM_14_CraftingTable
+  m_EditorClassIdentifier: 
+  itemName: CraftingTable
+  icon: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+  itemType: 0
+  maxStack: 32
+  dropModel: {fileID: 6164682021572067818, guid: 806f11ed7d405ea41994a635fdabd1e6, type: 3}
+  isPlaceable: 1
+  blockID: 14
+  dropsOnBreak: 1
+  isTool: 0
+  toolDamage: 1
+  dropItem: {fileID: 0}

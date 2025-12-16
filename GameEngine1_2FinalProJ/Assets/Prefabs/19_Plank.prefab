@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 1956237275276489883}
   - component: {fileID: 5658057008699365327}
   m_Layer: 6
-  m_Name: 13_Plank
+  m_Name: 19_Plank
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

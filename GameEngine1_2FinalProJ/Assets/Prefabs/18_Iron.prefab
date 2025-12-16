@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 1956237275276489883}
   - component: {fileID: 5658057008699365327}
   m_Layer: 6
-  m_Name: 15_StonePickAxe
+  m_Name: 18_Iron
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -62,7 +62,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 688998d1bf8a6c144b3b5fc8145152cb, type: 2}
+  - {fileID: 2100000, guid: bc731a218ea992f4283ff5a4d1cea187, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

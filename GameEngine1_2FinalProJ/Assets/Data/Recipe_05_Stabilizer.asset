@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f5b09324ef48014b9864dc19b27c98e, type: 3}
   m_Name: Recipe_05_Stabilizer
   m_EditorClassIdentifier: 
+  requiredStation: 1
   resultItem: {fileID: 11400000, guid: 8bec955d460fe3d4b9cbc10b82df5854, type: 2}
   resultCount: 1
   ingredients:

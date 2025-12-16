@@ -2272,6 +2272,12 @@ MonoBehaviour:
   - {fileID: 4641873546236802992, guid: 1c60535373f600647a3b3025cd4c95a2, type: 3}
   - {fileID: 4641873546236802992, guid: a7aa31aa657a4874f881dff6962de4e9, type: 3}
   - {fileID: 4641873546236802992, guid: 33bcd653ced51b34f804c14bb46735b8, type: 3}
+  - {fileID: 6164682021572067818, guid: 7cd8c6c8d88196246b336662819f012f, type: 3}
+  - {fileID: 6164682021572067818, guid: 5c2566fbb9f415e41a287ce17b562159, type: 3}
+  - {fileID: 6164682021572067818, guid: 806f11ed7d405ea41994a635fdabd1e6, type: 3}
+  - {fileID: 6164682021572067818, guid: afeb3f030b7328740858aa693baaff09, type: 3}
+  - {fileID: 6164682021572067818, guid: 0c98cac8cbf72544ebf54a2320ba5218, type: 3}
+  - {fileID: 6164682021572067818, guid: 0918c30a516a3d44abc91d5a4cb6f3db, type: 3}
   playerTransform: {fileID: 557942108}
   blockLayer:
     serializedVersion: 2
@@ -5062,9 +5068,14 @@ MonoBehaviour:
   - {fileID: 11400000, guid: e1e944d1daa7b6049ac2d6d224f09b7c, type: 2}
   - {fileID: 11400000, guid: c967d13057206ae4f803e76addf3c77e, type: 2}
   - {fileID: 11400000, guid: 98ae48a787d11d3489f3325b6e525555, type: 2}
+  - {fileID: 11400000, guid: c62abd20d9f15074992b68405c4657ff, type: 2}
+  - {fileID: 11400000, guid: 1fdd71214b8f41f47aeee9d30892484e, type: 2}
+  - {fileID: 11400000, guid: 96ccab6044aa73a4dbb3a164cb685c94, type: 2}
+  - {fileID: 11400000, guid: ce8797486212c2541b09d2dd8d07bcc6, type: 2}
   craftingPanelRoot: {fileID: 636003796}
   recipeListContent: {fileID: 147663786}
   recipeSlotPrefab: {fileID: 857963608678444376, guid: 52eaeb0318442a746b461b2c67db3248, type: 3}
+  panelTitleText: {fileID: 0}
   resultIcon: {fileID: 1411424199}
   resultNameText: {fileID: 1533113689}
   descriptionText: {fileID: 172092995}

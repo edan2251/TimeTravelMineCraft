@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f5b09324ef48014b9864dc19b27c98e, type: 3}
   m_Name: Recipe_01_StonePickAxe
   m_EditorClassIdentifier: 
+  requiredStation: 1
   resultItem: {fileID: 11400000, guid: f181d8f615cf8aa4eafb53e448dec1d1, type: 2}
   resultCount: 1
   ingredients:
