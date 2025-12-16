@@ -5058,6 +5058,10 @@ MonoBehaviour:
   allRecipes:
   - {fileID: 11400000, guid: be72a5d06859f224cbf993a26403b772, type: 2}
   - {fileID: 11400000, guid: a8063db62051e054aaafcd4e95dcba76, type: 2}
+  - {fileID: 11400000, guid: f05a9b64547e007478e5a7e4594d07ed, type: 2}
+  - {fileID: 11400000, guid: e1e944d1daa7b6049ac2d6d224f09b7c, type: 2}
+  - {fileID: 11400000, guid: c967d13057206ae4f803e76addf3c77e, type: 2}
+  - {fileID: 11400000, guid: 98ae48a787d11d3489f3325b6e525555, type: 2}
   craftingPanelRoot: {fileID: 636003796}
   recipeListContent: {fileID: 147663786}
   recipeSlotPrefab: {fileID: 857963608678444376, guid: 52eaeb0318442a746b461b2c67db3248, type: 3}

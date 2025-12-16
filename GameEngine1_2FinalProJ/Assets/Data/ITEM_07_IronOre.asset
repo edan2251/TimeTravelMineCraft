@@ -16,7 +16,7 @@ MonoBehaviour:
   icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
   itemType: 0
   maxStack: 32
-  dropModel: {fileID: 4641873546236802992, guid: 34d402f085324e141bd945e37239fd20, type: 3}
+  dropModel: {fileID: 5801738847966668720, guid: 49e33cff8d096e341890df090efe2429, type: 3}
   isPlaceable: 1
   blockID: 7
   isTool: 0

@@ -28,17 +28,27 @@ public class BlockBehavior : MonoBehaviour
 
     void BreakAndDrop()
     {
-        if (InventoryManager.Instance != null && myItemData != null)
+        if (myItemData != null)
         {
+            if (!myItemData.dropsOnBreak)
+            {
+                Destroy(gameObject);
+                return; 
+            }
+
             ItemData dropTarget = (myItemData.dropItem != null) ? myItemData.dropItem : myItemData;
 
-            bool added = InventoryManager.Instance.AddItem(dropTarget, 1);
-
-            if (!added)
+            if (InventoryManager.Instance != null)
             {
-                InventoryManager.Instance.SpawnDroppedItem(dropTarget, 1, transform.position);
+                bool added = InventoryManager.Instance.AddItem(dropTarget, 1);
+
+                if (!added)
+                {
+                    InventoryManager.Instance.SpawnDroppedItem(dropTarget, 1, transform.position);
+                }
             }
         }
+
         Destroy(gameObject);
     }
 }

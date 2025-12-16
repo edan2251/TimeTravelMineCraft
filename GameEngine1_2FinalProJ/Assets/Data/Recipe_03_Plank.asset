@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Recipe_03_Plank
   m_EditorClassIdentifier: 
   resultItem: {fileID: 11400000, guid: 2a93a94b0a1ec9546b4394951e5b0bca, type: 2}
-  resultCount: 1
+  resultCount: 4
   ingredients:
   - item: {fileID: 11400000, guid: 54535bde18df55c4a98f03172920c1fe, type: 2}
-    count: 4
+    count: 1
