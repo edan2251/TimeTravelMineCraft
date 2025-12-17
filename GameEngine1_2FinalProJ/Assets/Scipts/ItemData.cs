@@ -18,6 +18,7 @@ public class ItemData : ScriptableObject
     [Header("Action Settings")]
     public bool isPlaceable;
     public int blockID;
+    public bool isDestructible = true;
 
     [Header("Drop Settings")]
     public bool dropsOnBreak = true;

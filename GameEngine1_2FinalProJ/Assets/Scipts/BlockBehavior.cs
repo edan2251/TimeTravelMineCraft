@@ -9,6 +9,8 @@ public class BlockBehavior : MonoBehaviour
     public int maxHP = 3;
     public int currentHP;
 
+    public bool isUnbreakable = false;
+
     private void Start()
     {
         currentHP = maxHP;
@@ -16,6 +18,13 @@ public class BlockBehavior : MonoBehaviour
 
     public bool OnHit(int damage)
     {
+        if (isUnbreakable) return false;
+
+        if (myItemData != null && !myItemData.isDestructible)
+        {
+            return false;
+        }
+
         currentHP -= damage;
 
         if (currentHP <= 0)
@@ -23,7 +32,7 @@ public class BlockBehavior : MonoBehaviour
             BreakAndDrop();
             return true;
         }
-        return false; 
+        return false;
     }
 
     void BreakAndDrop()

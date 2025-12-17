@@ -1259,6 +1259,7 @@ MonoBehaviour:
   jumpPower: 3
   gravity: -20
   mouseSensitivity: 2
+  voidHeightThreshold: -20
 --- !u!143 &557942107
 CharacterController:
   m_ObjectHideFlags: 0
@@ -1314,6 +1315,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   buildCooldown: 0.25
+  evaporationEffect: {fileID: 0}
 --- !u!114 &557942110
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2252,13 +2254,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1993d93bebdf98546aee090204d722ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  width: 100
+  depth: 100
+  worldHeight: 64
+  terrainHeight: 20
   currentMapType: 0
-  width: 50
-  depth: 50
-  maxHeight: 30
   waterLevel: 4
   noiseScale: 20
-  nightVoidThreshold: 0.3
+  nightVoidThreshold: 0.4
+  centerSafeRadius: 6
+  ringWidth: 8
+  ruinIslandRadius: 5
+  ruinPadding: 10
   blockPrefabs:
   - {fileID: 6164682021572067818, guid: fc253a2a70e8a4245ad895032a0ccb83, type: 3}
   - {fileID: 5906922780569272151, guid: 9ecca93c4ef51f1438f8911732801061, type: 3}
@@ -5097,6 +5104,14 @@ MonoBehaviour:
   mapGenerator: {fileID: 880868500}
   timeText: {fileID: 114532138}
   currentTime: 0
+  lanternCount: 0
+  lanternSuccessEffect: {fileID: 0}
+  ruinPositions:
+  - {x: 10, y: 0, z: 10}
+  - {x: 10, y: 0, z: 40}
+  - {x: 40, y: 0, z: 10}
+  - {x: 40, y: 0, z: 40}
+  plantedSaplings: []
   stabilizerRange: 5
   showGizmos: 1
 --- !u!1 &2065209309
