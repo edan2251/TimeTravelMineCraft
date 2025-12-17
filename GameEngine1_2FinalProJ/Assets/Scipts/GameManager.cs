@@ -54,7 +54,7 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        UpdateMap();
+        mapGenerator.GenerateMap(currentTime, false);
     }
 
     void Update()
@@ -69,6 +69,24 @@ public class GameManager : MonoBehaviour
         {
             GiveCheatItem();
         }
+    }
+
+    public void HandlePlayerDeath()
+    {
+        Debug.Log("플레이어 사망! 아침 시간대의 안전한 곳으로 리스폰합니다.");
+
+        // 1. 시간대를 아침으로 강제 변경
+        currentTime = MapType.Morning;
+
+        // 2. 맵 생성기에게 "리스폰 모드"로 맵을 만들라고 명령
+        // (그냥 GenerateMap을 부르면 플레이어가 떨어진 위치(지하)를 기억해버리므로, 
+        //  리스폰 전용 함수를 MapGenerator에 새로 만들어서 호출합니다.)
+        if (mapGenerator != null)
+        {
+            mapGenerator.RespawnAtMorning();
+        }
+
+        if (timeText != null) timeText.text = $"Time: {currentTime}";
     }
 
     public void RecordPlacedBlock(MapType time, Vector3Int pos, int blockID)
@@ -149,7 +167,7 @@ public class GameManager : MonoBehaviour
     void UpdateMap()
     {
         // 맵 생성기에게 "이 시간대로 만들어줘"라고 명령
-        mapGenerator.GenerateMap(currentTime);
+        mapGenerator.GenerateMap(currentTime, true);
 
         if (timeText != null)
             timeText.text = $"Time: {currentTime}";

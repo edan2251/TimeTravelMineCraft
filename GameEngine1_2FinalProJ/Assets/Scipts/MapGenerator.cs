@@ -49,19 +49,17 @@ public class MapGenerator : MonoBehaviour
 
     private Vector3? lastPlayerPos = null;
 
-    void Start()
+    public void GenerateMap(MapType type, bool savePosition = true)
     {
-        seedX = Random.Range(0f, 9999f);
-        seedZ = Random.Range(0f, 9999f);
-
-        StartCoroutine(GenerateMapRoutine());
-    }
-
-    public void GenerateMap(MapType type)
-    {
-        if (playerTransform != null)
+        // ★ 핵심: savePosition이 true일 때만 위치를 저장함
+        if (savePosition && playerTransform != null)
         {
             lastPlayerPos = playerTransform.position;
+        }
+        else
+        {
+            // false면 위치 기억을 초기화 (맵 중앙으로 가도록)
+            lastPlayerPos = null;
         }
 
         currentMapType = type;
@@ -545,8 +543,10 @@ public class MapGenerator : MonoBehaviour
     void SpawnPlayer()
     {
         if (playerTransform == null) return;
+
         int targetX, targetZ;
 
+        // 1. 저장된 위치가 있으면 거기로 (시간 여행 시)
         if (lastPlayerPos.HasValue)
         {
             targetX = Mathf.Clamp(Mathf.RoundToInt(lastPlayerPos.Value.x), 0, width - 1);
@@ -554,13 +554,16 @@ public class MapGenerator : MonoBehaviour
         }
         else
         {
+            // 2. 저장된 위치가 없으면 맵 중앙으로 (게임 시작 시 / 사망 리스폰 시)
             targetX = width / 2;
             targetZ = depth / 2;
         }
 
-        int spawnY = maxHeight + 5;
+        // 3. 땅 높이 계산 (하늘에서부터 아래로 훑어서 땅 찾기)
+        int spawnY = maxHeight + 5; // 못 찾으면 하늘에 뜸
         for (int y = maxHeight; y >= 0; y--)
         {
+            // 공기(-1)가 아닌 블록을 찾으면 그 위(y+2)에 스폰
             if (mapData[targetX, y, targetZ] != AIR_ID)
             {
                 spawnY = y + 2;
@@ -568,8 +571,33 @@ public class MapGenerator : MonoBehaviour
             }
         }
 
+        // 4. 플레이어 이동 및 스크립트 켜기
         PlayerController pc = playerTransform.GetComponent<PlayerController>();
-        if (pc != null) pc.Teleport(new Vector3(targetX, spawnY, targetZ));
-        else playerTransform.position = new Vector3(targetX, spawnY, targetZ);
+        if (pc != null)
+        {
+            pc.enabled = true; // ★ 중요: 사망 시 꺼졌던 이동 기능을 다시 켬
+            pc.Teleport(new Vector3(targetX, spawnY, targetZ));
+        }
+        else
+        {
+            playerTransform.position = new Vector3(targetX, spawnY, targetZ);
+        }
+
+        Debug.Log($"플레이어 스폰 완료: ({targetX}, {spawnY}, {targetZ})");
     }
+
+    public void RespawnAtMorning()
+    {
+        // 1. 플레이어 위치 기억을 초기화 (null로 만듦)
+        // 이렇게 하면 SpawnPlayer 함수가 자동으로 "맵 중앙"을 스폰 위치로 잡습니다.
+        lastPlayerPos = null;
+
+        // 2. 아침 맵으로 설정
+        currentMapType = MapType.Morning;
+
+        // 3. 맵 재생성 시작
+        StopAllCoroutines();
+        StartCoroutine(GenerateMapRoutine());
+    }
+
 }

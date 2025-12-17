@@ -16,6 +16,9 @@ public class PlayerController : MonoBehaviour
     bool isGrounded;
     private bool isCursorLocked = true;
 
+    [Header("Safety")]
+    public float voidHeightThreshold = -20f; // ★ 추가: 이 높이 아래로 떨어지면 사망
+
     CharacterController controller;
     Transform cam;
 
@@ -30,6 +33,18 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         if (UIManager.Instance != null && UIManager.Instance.IsUIOpen) return;
+
+        if (transform.position.y < voidHeightThreshold)
+        {
+            if (GameManager.Instance != null)
+            {
+                // 계속 호출되지 않게 위치를 살짝 위로 옮기거나, 컨트롤러를 끄고 호출
+                // 여기서는 GameManager가 맵을 재생성하며 플레이어를 비활성화할 것이므로 호출만 함
+                GameManager.Instance.HandlePlayerDeath();
+                this.enabled = false; // 중복 사망 방지를 위해 잠시 끔 (리스폰 시 다시 켜짐)
+                return;
+            }
+        }
 
         if (!isCursorLocked)
         {
