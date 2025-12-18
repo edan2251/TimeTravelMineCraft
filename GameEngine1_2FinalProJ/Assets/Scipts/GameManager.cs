@@ -230,7 +230,7 @@ public class GameManager : MonoBehaviour
             }
         }
     }
-    
+
     // 유적 목표 체크
     public void CheckLanternObjective(Vector3Int pos)
     {
@@ -245,7 +245,13 @@ public class GameManager : MonoBehaviour
                 Debug.Log($"유적 봉인 해제! ({lanternCount}/{TARGET_LANTERNS})");
 
                 if (lanternSuccessEffect != null)
-                    Instantiate(lanternSuccessEffect, new Vector3(pos.x, pos.y, pos.z), Quaternion.identity);
+                {
+                    // ★ 수정: 블록의 '중앙'에 예쁘게 빛이 생기도록 0.5씩 더해줍니다.
+                    Vector3 effectPos = new Vector3(pos.x + 0.5f, pos.y + 0.5f, pos.z + 0.5f);
+
+                    // 이펙트 생성 (이 프리팹 안에 Light가 들어있으니 계속 빛날 겁니다)
+                    Instantiate(lanternSuccessEffect, effectPos, Quaternion.identity);
+                }
 
                 if (timeText != null) timeText.text = $"Lanterns: {lanternCount}/{TARGET_LANTERNS}";
 

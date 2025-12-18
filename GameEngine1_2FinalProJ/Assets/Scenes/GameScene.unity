@@ -6644,7 +6644,7 @@ MonoBehaviour:
   timeText: {fileID: 114532138}
   currentTime: 0
   lanternCount: 0
-  lanternSuccessEffect: {fileID: 0}
+  lanternSuccessEffect: {fileID: 2604640183440391499, guid: c3cc5581b14072143864461909ef71ba, type: 3}
   ruinPositions:
   - {x: 10, y: 0, z: 10}
   - {x: 10, y: 0, z: 40}
