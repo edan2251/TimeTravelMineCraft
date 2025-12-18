@@ -2,14 +2,15 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using System; // Action을 쓰기 위해 필요
 
 public class SceneTransitionManager : MonoBehaviour
 {
     public static SceneTransitionManager Instance;
 
     [Header("UI References")]
-    public Canvas fadeCanvas; // 페이드용 캔버스
-    public Image fadeImage;   // 검은색 이미지
+    public Canvas fadeCanvas;
+    public Image fadeImage;
 
     [Header("Settings")]
     public float fadeDuration = 1.0f;
@@ -21,7 +22,6 @@ public class SceneTransitionManager : MonoBehaviour
             Instance = this;
             DontDestroyOnLoad(gameObject); // 씬이 바껴도 파괴되지 않음
 
-            // 캔버스 설정 강제 (최상단 노출)
             fadeCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
             fadeCanvas.sortingOrder = 9999;
         }
@@ -33,26 +33,42 @@ public class SceneTransitionManager : MonoBehaviour
 
     private void Start()
     {
-        // 게임 켜지면 페이드 인으로 시작
+        // 게임 시작 시 페이드 인
         StartCoroutine(Fade(0f));
     }
 
-    // 외부에서 호출: "이 씬으로 이동해줘"
     public void LoadScene(string sceneName)
     {
         StartCoroutine(TransitionRoutine(sceneName));
     }
 
-    IEnumerator TransitionRoutine(string sceneName)
+    // ★★★ [신규 기능] 씬 이동 없이 페이드 효과만 주고, 중간에 할 일(함수)을 실행
+    public void PlayFadeSequence(Action onMiddle)
     {
-        // 1. 페이드 아웃 (화면이 검어짐)
+        StartCoroutine(FadeSequenceRoutine(onMiddle));
+    }
+
+    IEnumerator FadeSequenceRoutine(Action onMiddle)
+    {
+        // 1. 화면을 검게 만듦 (Fade Out)
         yield return StartCoroutine(Fade(1f));
 
-        // 2. 씬 로딩
-        Time.timeScale = 1f; // 일시정지 상태일 수도 있으니 시간 정상화
-        yield return SceneManager.LoadSceneAsync(sceneName);
+        // 2. 중간에 할 일 실행 (여기서 맵이 바뀜)
+        // 화면이 깜깜해서 플레이어는 맵이 바뀌는 과정을 못 봄
+        if (onMiddle != null) onMiddle.Invoke();
 
-        // 3. 페이드 인 (화면이 밝아짐)
+        // 맵 생성 렉이 페이드 중에 튀지 않게 한 프레임 대기
+        yield return null;
+
+        // 3. 다시 화면을 밝게 만듦 (Fade In)
+        yield return StartCoroutine(Fade(0f));
+    }
+
+    IEnumerator TransitionRoutine(string sceneName)
+    {
+        yield return StartCoroutine(Fade(1f));
+        Time.timeScale = 1f;
+        yield return SceneManager.LoadSceneAsync(sceneName);
         yield return StartCoroutine(Fade(0f));
     }
 
@@ -63,7 +79,7 @@ public class SceneTransitionManager : MonoBehaviour
 
         while (time < fadeDuration)
         {
-            time += Time.unscaledDeltaTime; // 일시정지 중에도 페이드 되게 unscaled 사용
+            time += Time.unscaledDeltaTime;
             float alpha = Mathf.Lerp(startAlpha, targetAlpha, time / fadeDuration);
 
             Color c = fadeImage.color;
@@ -73,12 +89,9 @@ public class SceneTransitionManager : MonoBehaviour
             yield return null;
         }
 
-        // 확실하게 목표값 설정
         Color finalColor = fadeImage.color;
         finalColor.a = targetAlpha;
         fadeImage.color = finalColor;
-
-        // 투명해지면 클릭 방해 안 하게 Raycast Target 끄기
-        fadeImage.raycastTarget = (targetAlpha > 0.1f);
+        fadeImage.raycastTarget = (targetAlpha > 0.1f); // 투명할 땐 클릭 통과
     }
 }

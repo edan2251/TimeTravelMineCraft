@@ -15,6 +15,33 @@ public class BlockBehavior : MonoBehaviour
     private Renderer[] myRenderers;
     private Color[] originalColors; // 원래 색상들도 배열로 저장
 
+    private void OnEnable()
+    {
+        // 1. 체력 리셋
+        currentHP = maxHP;
+        isUnbreakable = false; // 유지기/베드락 해제
+
+        // 2. 렌더러 초기화 (혹시 꺼져있었다면 켜기)
+        if (GetComponent<MeshRenderer>() != null)
+            GetComponent<MeshRenderer>().enabled = true;
+
+        // 3. 색깔/투명도 리셋 (밤의 저주 등으로 투명해졌을 수 있음)
+        if (myRenderers != null && originalColors != null)
+        {
+            for (int i = 0; i < myRenderers.Length; i++)
+            {
+                if (myRenderers[i] != null)
+                {
+                    // 원래 색으로 복구
+                    myRenderers[i].material.color = originalColors[i];
+
+                    // 쉐이더 모드가 바뀌었다면 Opaque로 돌리는 로직이 필요할 수도 있음
+                    // (보통 Color만 복구해도 해결됨)
+                }
+            }
+        }
+    }
+
     private void Start()
     {
         currentHP = maxHP;
@@ -102,6 +129,13 @@ public class BlockBehavior : MonoBehaviour
             }
         }
 
-        Destroy(gameObject);
+        if (ObjectPoolManager.Instance != null)
+        {
+            ObjectPoolManager.Instance.Despawn(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 }

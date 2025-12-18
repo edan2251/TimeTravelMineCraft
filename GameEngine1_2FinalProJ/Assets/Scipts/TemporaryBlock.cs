@@ -33,14 +33,13 @@ public class TemporaryBlock : MonoBehaviour
         // 2. 시간이 다 되면 파괴
         if (timer >= lifeTime)
         {
-            if (map != null)
-            {
-                // (1) 맵 데이터에서 먼저 지우고 (그래야 그 자리에 또 설치 가능)
-                map.RemoveBlockAt(transform.position);
-            }
+            if (map != null) map.RemoveBlockAt(transform.position);
 
-            // (2) ★ 핵심: 눈에 보이는 오브젝트도 확실하게 파괴!
-            Destroy(gameObject);
+            // ★ 수정: Destroy -> Despawn
+            if (ObjectPoolManager.Instance != null)
+                ObjectPoolManager.Instance.Despawn(gameObject);
+            else
+                Destroy(gameObject);
         }
     }
 }

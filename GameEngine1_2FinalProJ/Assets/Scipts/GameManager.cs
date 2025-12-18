@@ -14,6 +14,9 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
 
+    [Header("Environment")]
+    public TimeEnvironmentManager environmentManager;
+
     [Header("Settings")]
     public ItemData stabilizerItemData;
     public MapGenerator mapGenerator;
@@ -38,7 +41,7 @@ public class GameManager : MonoBehaviour
     private bool[] ruinActiveStates = new bool[4];
 
     // 데이터 저장소
-    public HashSet<Vector3Int> activeStabilizers = new HashSet<Vector3Int>();
+    public HashSet<Vector2Int> activeStabilizers = new HashSet<Vector2Int>();
     private Dictionary<MapType, HashSet<Vector3Int>> brokenBlocks = new Dictionary<MapType, HashSet<Vector3Int>>();
     private Dictionary<MapType, Dictionary<Vector3Int, int>> placedBlocks = new Dictionary<MapType, Dictionary<Vector3Int, int>>();
     private Dictionary<MapType, Dictionary<Vector3Int, InventorySlot[]>> storageData = new Dictionary<MapType, Dictionary<Vector3Int, InventorySlot[]>>();
@@ -47,6 +50,8 @@ public class GameManager : MonoBehaviour
     // ID 상수
     const int SAPLING_ID = 13;
     public const int LANTERN_ID = 16;
+    public const int STABILIZER_ID = 11;
+    private bool isTimeShifting = false;
 
     [Header("Debug")]
     public float stabilizerRange = 5f;
@@ -66,6 +71,9 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        if (environmentManager != null)
+            environmentManager.SetAtmosphere(currentTime);
+
         // false: 위치 저장 안 함 (맵 중앙 스폰)
         mapGenerator.GenerateMap(currentTime, false);
     }
@@ -114,22 +122,81 @@ public class GameManager : MonoBehaviour
     // 시간 이동
     public void GoToNextTime()
     {
+        // 이미 이동 중이거나 UI가 켜져 있으면 무시
+        if (isTimeShifting) return;
+        if (UIManager.Instance != null && UIManager.Instance.IsUIOpen) return;
+
+        isTimeShifting = true;
+
+        // ★ 페이드 매니저에게 "화면 가려지면 ActualTimeChange 함수 실행해줘" 라고 위임
+        if (SceneTransitionManager.Instance != null)
+        {
+            SceneTransitionManager.Instance.PlayFadeSequence(ActualTimeChange);
+        }
+        else
+        {
+            // 매니저가 없으면(비상시) 그냥 바로 실행
+            ActualTimeChange();
+        }
+    }
+
+
+    void ActualTimeChange()
+    {
         GrowSaplings();
+
         switch (currentTime)
         {
             case MapType.Morning: currentTime = MapType.Noon; break;
             case MapType.Noon: currentTime = MapType.Night; break;
             case MapType.Night: currentTime = MapType.Morning; break;
         }
+
         bool shouldSavePos = (currentTime != MapType.Night);
 
-        // 맵 생성 요청
+        // 분위기 변경
+        if (environmentManager != null)
+            environmentManager.SetAtmosphere(currentTime);
+
+        // 맵 재생성 (플레이어 눈에는 안 보임)
         mapGenerator.GenerateMap(currentTime, shouldSavePos);
 
         if (timeText != null)
             timeText.text = $"Time: {currentTime}";
 
-        Debug.Log($"[시간 이동] {currentTime} 도착! (위치 저장: {shouldSavePos})");
+        Debug.Log($"[시간 이동] {currentTime} 도착!");
+
+        // 작업 끝났으니 플래그 해제
+        isTimeShifting = false;
+    }
+
+    // 사망 처리도 페이드 효과 적용하면 좋음
+    public void HandlePlayerDeath()
+    {
+        if (isTimeShifting) return;
+        isTimeShifting = true;
+
+        Debug.Log("플레이어 사망 -> 아침 리스폰 페이드 시작");
+
+        if (SceneTransitionManager.Instance != null)
+        {
+            SceneTransitionManager.Instance.PlayFadeSequence(() =>
+            {
+                // 페이드 중간에 실행될 내용 (람다식)
+                currentTime = MapType.Morning;
+                if (environmentManager != null) environmentManager.SetAtmosphere(MapType.Morning);
+                if (mapGenerator != null) mapGenerator.RespawnAtMorning();
+                if (timeText != null) timeText.text = $"Time: {currentTime}";
+
+                isTimeShifting = false;
+            });
+        }
+        else
+        {
+            currentTime = MapType.Morning;
+            if (mapGenerator != null) mapGenerator.RespawnAtMorning();
+            isTimeShifting = false;
+        }
     }
 
     // 묘목 성장 및 생존 로직
@@ -163,7 +230,7 @@ public class GameManager : MonoBehaviour
             }
         }
     }
-
+    
     // 유적 목표 체크
     public void CheckLanternObjective(Vector3Int pos)
     {
@@ -199,14 +266,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // 플레이어 사망 처리
-    public void HandlePlayerDeath()
-    {
-        Debug.Log("플레이어 사망 -> 아침 리스폰");
-        currentTime = MapType.Morning;
-        if (mapGenerator != null) mapGenerator.RespawnAtMorning();
-        if (timeText != null) timeText.text = $"Time: {currentTime}";
-    }
 
     // 데이터 기록 함수들
     public void RecordPlacedBlock(MapType time, Vector3Int pos, int blockID)
@@ -218,6 +277,12 @@ public class GameManager : MonoBehaviour
 
         if (blockID == SAPLING_ID) RegisterSapling(time, pos);
         if (IsBlockBroken(time, pos.x, pos.y, pos.z)) brokenBlocks[time].Remove(pos);
+
+        // ★★★ [핵심 변경] 유지기라면? -> X, Z 좌표만 리스트에 등록 (다른 시간대 딕셔너리에 복사 X)
+        if (blockID == STABILIZER_ID)
+        {
+            AddStabilizer(pos);
+        }
     }
 
     public void RemovePlacedBlockRecord(MapType time, Vector3Int pos)
@@ -236,8 +301,20 @@ public class GameManager : MonoBehaviour
     }
 
     // 유지기 및 파괴 기록 함수들 (단순 호출)
-    public void AddStabilizer(Vector3Int pos) { if (!activeStabilizers.Contains(pos)) activeStabilizers.Add(pos); }
-    public void RemoveStabilizer(Vector3Int pos) { if (activeStabilizers.Contains(pos)) activeStabilizers.Remove(pos); }
+    public void AddStabilizer(Vector3Int pos)
+    {
+        Vector2Int coord = new Vector2Int(pos.x, pos.z);
+        if (!activeStabilizers.Contains(coord)) activeStabilizers.Add(coord);
+    }
+    public void RemoveStabilizer(Vector3Int pos)
+    {
+        // X, Z만 추출해서 삭제
+        Vector2Int coord = new Vector2Int(pos.x, pos.z);
+        if (activeStabilizers.Contains(coord)) activeStabilizers.Remove(coord);
+
+        // 현재 시간대의 기록에서만 삭제하면 됨 (다른 시간대는 자동 생성 로직이므로 기록이 없음)
+        RemovePlacedBlockRecord(currentTime, pos);
+    }
     public void RecordBrokenBlock(MapType time, Vector3Int pos)
     {
         if (!brokenBlocks.ContainsKey(time)) brokenBlocks[time] = new HashSet<Vector3Int>();
@@ -247,8 +324,12 @@ public class GameManager : MonoBehaviour
 
     public bool IsStabilizedZone(int x, int z)
     {
+        Vector2 checkPos = new Vector2(x, z);
         foreach (var pos in activeStabilizers)
-            if (Vector2.Distance(new Vector2(x, z), new Vector2(pos.x, pos.z)) <= stabilizerRange) return true;
+        {
+            // pos는 이제 Vector2Int입니다.
+            if (Vector2.Distance(checkPos, pos) <= stabilizerRange) return true;
+        }
         return false;
     }
 
@@ -271,12 +352,14 @@ public class GameManager : MonoBehaviour
             InventoryManager.Instance.AddItem(stabilizerItemData, 1);
     }
 
-    
+
     private void OnDrawGizmos()
     {
         if (!showGizmos) return;
         Gizmos.color = Color.cyan;
-        foreach (var pos in activeStabilizers) Gizmos.DrawWireSphere(new Vector3(pos.x, pos.y, pos.z), stabilizerRange);
+        // 높이를 모르므로 대충 플레이어 높이나 0으로 그리기
+        foreach (var pos in activeStabilizers)
+            Gizmos.DrawWireSphere(new Vector3(pos.x, 10, pos.y), stabilizerRange); // pos.y가 Z좌표임
         Gizmos.color = Color.yellow;
         foreach (var pos in ruinPositions) Gizmos.DrawWireCube(pos, Vector3.one);
     }

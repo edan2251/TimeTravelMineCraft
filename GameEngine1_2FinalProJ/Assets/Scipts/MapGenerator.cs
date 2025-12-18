@@ -40,6 +40,8 @@ public class MapGenerator : MonoBehaviour
     private float seedX, seedZ;
     private Vector3? lastPlayerPos = null;
     private HashSet<Vector3Int> ruinBlockCoords = new HashSet<Vector3Int>();
+    private HashSet<Vector3Int> stabilizedCoords = new HashSet<Vector3Int>();
+    private bool[,] stabilizedMap;
 
     const int AIR_ID = -1;
     const int STABILIZER_ID = 11;
@@ -79,28 +81,57 @@ public class MapGenerator : MonoBehaviour
     // 맵 생성 코루틴
     IEnumerator GenerateMapRoutine()
     {
+        float totalStartTime = Time.realtimeSinceStartup;
+
         if (playerTransform != null) playerTransform.gameObject.SetActive(false);
 
-        // 0. 유적 위치 재계산 (맵 크기가 변했을 수 있으므로)
+        // 0. 사전 계산
         CalculateRuinPositions();
 
-        // 1. 초기화
+        // 1. 초기화 (싹 다 지우기)
         mapData = new int[width, worldHeight, depth];
         InitializeMapDataWithAir();
         ruinBlockCoords.Clear();
-        foreach (Transform child in transform) Destroy(child.gameObject);
-        if(barrierRoot != null) Destroy(barrierRoot);
-        CreateWorldBarriers(); // 거대 벽 생성
 
-        // 2. 데이터 생성
-        FillMapData();
+        List<GameObject> childrenToReturn = new List<GameObject>();
+        foreach (Transform child in transform)
+        {
+            if (child.name == "WorldBarriers") continue;
+            childrenToReturn.Add(child.gameObject);
+        }
+        foreach (var obj in childrenToReturn) ObjectPoolManager.Instance.Despawn(obj);
+
+        if (barrierRoot != null) Destroy(barrierRoot);
+        CreateWorldBarriers();
+
+        // ====================================================
+        // ★★★ [로직 변경] 단계별 데이터 생성 (Layered Generation) ★★★
+        // ====================================================
+
+        // Step 1: 베이스 지형 생성 (구멍 없이 꽉 찬 지형)
+        GenerateBaseTerrain();
+
+        // Step 2: 밤(Night)이라면 구멍 뚫기 (유지기 무시하고 일단 뚫음)
+        if (currentMapType == MapType.Night)
+        {
+            CarveNightHoles();
+        }
+
+        // Step 3: 유지기 구역 복구 및 설치 (구멍 난 곳 메꾸기 + 기계 설치)
+        RestoreStabilizedZones();
+
+        // Step 4: 기타 구조물 및 데이터 적용
         GenerateTrees();
         GenerateRuins();
         ApplyBrokenBlocks();
         ApplyPlacedBlocks();
 
-        // 3. 오브젝트 소환
+        // ====================================================
+
+        // 4. 오브젝트 소환 (이제 데이터는 완벽하니 믿고 소환)
         int blockCount = 0;
+        float loopStartTime = Time.realtimeSinceStartup;
+
         for (int x = 0; x < width; x++)
         {
             for (int z = 0; z < depth; z++)
@@ -109,23 +140,182 @@ public class MapGenerator : MonoBehaviour
                 {
                     int id = mapData[x, y, z];
                     if (id == AIR_ID) continue;
-                    if (IsHidden(x, y, z) && id != 3) continue;
+
+                    // 숨겨진 블록 최적화 (유지기 ID 11은 투명 처리 필수!)
+                    if (IsHidden(x, y, z) && id != 3 && id != 11) continue;
 
                     SpawnBlockObj(x, y, z, id);
                     blockCount++;
                 }
             }
-            if (x % 2 == 0) yield return null;
+
+            if (Time.realtimeSinceStartup - loopStartTime > 0.015f)
+            {
+                yield return null;
+                loopStartTime = Time.realtimeSinceStartup;
+            }
         }
 
-        RefreshStabilizerZones();
-        Debug.Log($"맵 생성 완료! 블록 수: {blockCount}");
+        Debug.Log($"맵 생성 완료! (소요 시간: {Time.realtimeSinceStartup - totalStartTime:F2}초)");
 
         if (playerTransform != null) playerTransform.gameObject.SetActive(true);
         SpawnPlayer();
     }
 
-    void CalculateRuinPositions()
+    void GenerateBaseTerrain()
+    {
+        for (int x = 0; x < width; x++)
+        {
+            for (int z = 0; z < depth; z++)
+            {
+                // 노이즈 계산
+                float noiseVal = Mathf.PerlinNoise((x + seedX) / noiseScale, (z + seedZ) / noiseScale);
+                if (currentMapType == MapType.Noon) noiseVal *= 1.5f;
+
+                int height = Mathf.FloorToInt(noiseVal * terrainHeight);
+                if (height < 1) height = 1;
+
+                // 바닥 베드락
+                mapData[x, 0, z] = BEDROCK_ID;
+
+                // 높이만큼 블록 채우기
+                for (int y = 1; y < worldHeight; y++)
+                {
+                    if (y <= height) mapData[x, y, z] = GetBlockIDByTheme(y, height);
+                    else if (y <= waterLevel && currentMapType == MapType.Morning) mapData[x, y, z] = 3; // 물
+                    else mapData[x, y, z] = AIR_ID;
+                }
+            }
+        }
+    }
+
+    // [Step 2] 밤 구멍 뚫기 (삭제 로직)
+    void CarveNightHoles()
+    {
+        Vector2 centerPos = new Vector2(width / 2f, depth / 2f);
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int z = 0; z < depth; z++)
+            {
+                bool shouldBeHole = false;
+                float distFromCenter = Vector2.Distance(new Vector2(x, z), centerPos);
+
+                // 안전지대 & 링 패턴 계산
+                if (distFromCenter >= centerSafeRadius)
+                {
+                    float ringIndex = Mathf.Floor((distFromCenter - centerSafeRadius) / ringWidth);
+                    if (ringIndex % 2 == 0) shouldBeHole = true;
+                    else
+                    {
+                        float voidNoise = Mathf.PerlinNoise((x + seedX) * 0.15f, (z + seedZ) * 0.15f);
+                        shouldBeHole = (voidNoise < nightVoidThreshold);
+                    }
+                }
+
+                // 유적 주변 보호
+                if (GameManager.Instance != null)
+                {
+                    foreach (Vector3Int ruinPos in GameManager.Instance.ruinPositions)
+                    {
+                        if (Vector2.Distance(new Vector2(x, z), new Vector2(ruinPos.x, ruinPos.z)) < ruinIslandRadius)
+                        {
+                            shouldBeHole = false;
+                            break;
+                        }
+                    }
+                }
+
+                // ★ 구멍으로 판정되면 해당 좌표의 모든 블록 삭제 (유지기 고려 X)
+                if (shouldBeHole)
+                {
+                    for (int y = 0; y < worldHeight; y++)
+                    {
+                        mapData[x, y, z] = AIR_ID;
+                    }
+                }
+            }
+        }
+    }
+
+    // [Step 3] 유지기 구역 복구 (재생성 로직)
+    void RestoreStabilizedZones()
+    {
+        if (GameManager.Instance == null) return;
+
+        float range = GameManager.Instance.stabilizerRange;
+
+        // 모든 활성 유지기 좌표(Vector2Int)를 순회
+        foreach (Vector2Int pos in GameManager.Instance.activeStabilizers)
+        {
+            // 유지기 영향권 계산
+            int startX = Mathf.Max(0, Mathf.FloorToInt(pos.x - range));
+            int endX = Mathf.Min(width - 1, Mathf.CeilToInt(pos.x + range));
+            int startZ = Mathf.Max(0, Mathf.FloorToInt(pos.y - range)); // pos.y == Z
+            int endZ = Mathf.Min(depth - 1, Mathf.CeilToInt(pos.y + range));
+
+            for (int x = startX; x <= endX; x++)
+            {
+                for (int z = startZ; z <= endZ; z++)
+                {
+                    // 범위 밖이면 패스
+                    if (Vector2.Distance(new Vector2(x, z), pos) > range) continue;
+
+                    // ★ 여기가 핵심: 만약 구멍 뚫려서 AIR가 됐다면, 다시 지형을 채워넣음!
+                    // (Step 1의 지형 생성 로직을 여기만 다시 적용)
+                    if (mapData[x, 0, z] == AIR_ID)
+                    {
+                        // 1. 다시 높이 계산 (원래 있었어야 할 땅)
+                        float noiseVal = Mathf.PerlinNoise((x + seedX) / noiseScale, (z + seedZ) / noiseScale);
+                        // 밤이라서 노이즈가 달라지면 안되니, 지형 높이는 Morning/Noon 기준과 비슷하게 유지하거나
+                        // Night여도 땅이 있다면 1.0배율 등 원하는대로 설정
+
+                        int height = Mathf.FloorToInt(noiseVal * terrainHeight);
+                        if (height < 1) height = 1;
+
+                        // 2. 블록 복구
+                        mapData[x, 0, z] = BEDROCK_ID;
+                        for (int y = 1; y < worldHeight; y++)
+                        {
+                            if (y <= height) mapData[x, y, z] = GetBlockIDByTheme(y, height);
+                            // 밤에는 물이 없으니 물 복구는 생략하거나 필요시 추가
+                        }
+                    }
+                }
+            }
+
+            // ★ 유지기 기계 자체 설치 (땅 위에)
+            PlaceGlobalStabilizerObject(pos.x, pos.y);
+        }
+    }
+
+    void PlaceGlobalStabilizerObject(int x, int z)
+    {
+        if (!IsIdxValid(x, 0, z)) return;
+
+        // 가장 높은 땅 찾기
+        int surfaceY = -1;
+        for (int y = worldHeight - 1; y >= 0; y--)
+        {
+            int id = mapData[x, y, z];
+            // 밟을 수 있는 땅
+            if (id != AIR_ID && id != STABILIZER_ID && id != LEAVES_ID && id != 3)
+            {
+                surfaceY = y;
+                break;
+            }
+        }
+
+        if (surfaceY != -1 && surfaceY < worldHeight - 1)
+        {
+            int targetY = surfaceY + 1;
+            mapData[x, targetY, z] = STABILIZER_ID;
+            // GameManager 기록 갱신 (나중에 캐기 위해)
+            GameManager.Instance.RecordPlacedBlock(currentMapType, new Vector3Int(x, targetY, z), STABILIZER_ID);
+        }
+    }
+
+        void CalculateRuinPositions()
     {
         if (GameManager.Instance == null) return;
 
@@ -185,109 +375,6 @@ public class MapGenerator : MonoBehaviour
 
             // 물리 레이어 설정 (플레이어가 막히도록)
             // 필요한 경우 wall.layer = LayerMask.NameToLayer("Obstacle"); 등을 추가
-        }
-    }
-
-    // 펄린 노이즈 기반 지형 데이터 생성
-    void FillMapData()
-    {
-        Vector2 centerPos = new Vector2(width / 2f, depth / 2f);
-
-        for (int x = 0; x < width; x++)
-        {
-            for (int z = 0; z < depth; z++)
-            {
-                // ★ 수정 1: 여기서 무조건 베드락을 깔던 코드를 삭제함.
-                // (아직 구멍인지 아닌지 모르기 때문)
-
-                // ★ 수정 2: 구멍 여부 변수를 미리 선언 (기본값 false = 땅)
-                bool shouldBeHole = false;
-
-                // 지형 높이 계산 (기존 동일)
-                float noiseVal = Mathf.PerlinNoise((x + seedX) / noiseScale, (z + seedZ) / noiseScale);
-                if (currentMapType == MapType.Noon) noiseVal *= 1.5f;
-
-                int height = Mathf.FloorToInt(noiseVal * terrainHeight);
-                if (height < 1) height = 1;
-
-                // --- 밤 로직 (기존 동일) ---
-                if (currentMapType == MapType.Night)
-                {
-                    float distFromCenter = Vector2.Distance(new Vector2(x, z), centerPos);
-
-                    // 1. 중앙 안전지대
-                    if (distFromCenter < centerSafeRadius)
-                    {
-                        shouldBeHole = false;
-                    }
-                    else
-                    {
-                        // 2. 링 패턴
-                        float ringIndex = Mathf.Floor((distFromCenter - centerSafeRadius) / ringWidth);
-
-                        if (ringIndex % 2 == 0)
-                        {
-                            shouldBeHole = true; // 공허 링
-                        }
-                        else
-                        {
-                            // 땅 링이지만 치즈 구멍
-                            float voidNoise = Mathf.PerlinNoise((x + seedX) * 0.15f, (z + seedZ) * 0.15f);
-                            shouldBeHole = (voidNoise < nightVoidThreshold);
-                        }
-                    }
-
-                    // 3. 유적 주변 보호
-                    if (GameManager.Instance != null)
-                    {
-                        foreach (Vector3Int ruinPos in GameManager.Instance.ruinPositions)
-                        {
-                            if (Vector2.Distance(new Vector2(x, z), new Vector2(ruinPos.x, ruinPos.z)) < ruinIslandRadius)
-                            {
-                                shouldBeHole = false; // 강제 땅
-                                break;
-                            }
-                        }
-                    }
-
-                    // 4. 유지기 보호
-                    if (shouldBeHole && GameManager.Instance != null && GameManager.Instance.IsStabilizedZone(x, z))
-                    {
-                        shouldBeHole = false;
-                    }
-
-                    if (shouldBeHole) height = -1;
-                }
-                // --- 밤 로직 끝 ---
-
-                // ★★★ 수정 3: 구멍 판정이 끝난 후 베드락 설치 결정 ★★★
-                if (shouldBeHole)
-                {
-                    // 구멍이면 바닥(0층)도 뚫어버림 (공기)
-                    mapData[x, 0, z] = AIR_ID;
-                }
-                else
-                {
-                    // 구멍이 아니면(땅이면) 바닥에 베드락 설치
-                    mapData[x, 0, z] = BEDROCK_ID;
-                }
-
-
-                // Y=1 부터 지형 생성 (기존 동일)
-                for (int y = 1; y < worldHeight; y++)
-                {
-                    // 유지기
-                    if (GameManager.Instance != null && GameManager.Instance.activeStabilizers.Contains(new Vector3Int(x, y, z)))
-                    {
-                        mapData[x, y, z] = STABILIZER_ID;
-                        continue;
-                    }
-
-                    if (height >= 0 && y <= height) mapData[x, y, z] = GetBlockIDByTheme(y, height);
-                    else if (y <= waterLevel && currentMapType == MapType.Morning) mapData[x, y, z] = 3;
-                    else mapData[x, y, z] = AIR_ID;
-                }
-            }
         }
     }
 
@@ -595,10 +682,17 @@ public class MapGenerator : MonoBehaviour
     {
         if (id >= 0 && id < blockPrefabs.Count)
         {
-            GameObject obj = Instantiate(blockPrefabs[id], new Vector3(x, y, z), Quaternion.identity, transform);
+            // ★ 수정: Instantiate -> PoolManager.Spawn
+            // 부모를 transform(MapGenerator)으로 설정
+            GameObject obj = ObjectPoolManager.Instance.Spawn(
+                blockPrefabs[id],
+                new Vector3(x, y, z),
+                Quaternion.identity,
+                transform
+            );
 
-            // 유적 블록 무적 설정
-            if (ruinBlockCoords.Contains(new Vector3Int(x, y, z)))
+            // 유적/베드락 무적 설정 (기존 로직 유지)
+            if (ruinBlockCoords.Contains(new Vector3Int(x, y, z)) || id == BEDROCK_ID)
             {
                 var block = obj.GetComponent<BlockBehavior>();
                 if (block != null) block.isUnbreakable = true;
@@ -625,24 +719,6 @@ public class MapGenerator : MonoBehaviour
         SpawnBlockObj(x, y, z, id);
     }
 
-    void RefreshStabilizerZones()
-    {
-        if (GameManager.Instance == null) return;
-        float range = GameManager.Instance.stabilizerRange;
-
-        foreach (var pos in GameManager.Instance.activeStabilizers)
-        {
-            int startX = Mathf.Max(0, pos.x - (int)range - 2);
-            int endX = Mathf.Min(width - 1, pos.x + (int)range + 2);
-            int startZ = Mathf.Max(0, pos.z - (int)range - 2);
-            int endZ = Mathf.Min(depth - 1, pos.z + (int)range + 2);
-
-            for (int x = startX; x <= endX; x++)
-                for (int z = startZ; z <= endZ; z++)
-                    for (int y = 0; y < worldHeight; y++)
-                        CheckAndSpawn(x, y, z);
-        }
-    }
 
     // 유틸리티
     public Vector3Int WorldToGrid(Vector3 pos) => new Vector3Int(Mathf.RoundToInt(pos.x), Mathf.RoundToInt(pos.y), Mathf.RoundToInt(pos.z));
@@ -661,7 +737,15 @@ public class MapGenerator : MonoBehaviour
         return true;
     }
 
-    bool IsTransparent(int x, int y, int z) => (mapData[x, y, z] == AIR_ID || mapData[x, y, z] == 3);
+    bool IsTransparent(int x, int y, int z)
+    {
+        if (!IsIdxValid(x, y, z)) return true; // 맵 밖은 투명
+        int id = mapData[x, y, z];
+
+        // ★ 수정: STABILIZER_ID (11)을 반드시 추가해야 합니다!
+        // 그래야 옆에 있는 블록들이 "아, 옆에 투명한 기계가 있구나" 하고 옆면을 그립니다.
+        return (id == AIR_ID || id == 3 || id == STABILIZER_ID);
+    }
 
     // 플레이어 스폰 위치 계산 및 이동
     void SpawnPlayer()
