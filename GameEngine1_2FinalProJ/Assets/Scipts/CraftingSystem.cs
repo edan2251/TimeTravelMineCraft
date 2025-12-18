@@ -27,8 +27,6 @@ public class CraftingSystem : MonoBehaviour
     private bool isOpen = false;
 
     private CraftingType currentStationType = CraftingType.Player;
-
-    // ★ 치트 모드 변수 추가
     private bool isCreativeMode = false;
 
     void Start()
@@ -39,94 +37,45 @@ public class CraftingSystem : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Tab))
-        {
-            TogglePanel();
-        }
-
-        // ★ P키로 무료 제작 모드 토글
         if (Input.GetKeyDown(KeyCode.P))
         {
             isCreativeMode = !isCreativeMode;
-            Debug.Log($"무료 제작 치트: {(isCreativeMode ? "ON" : "OFF")}");
-
-            // UI가 열려있다면 즉시 갱신해서 버튼 활성화 상태 보여주기
-            if (isOpen && currentRecipe != null)
-            {
-                UpdateDetailView();
-            }
-        }
-
-        if (isOpen && currentStationType != CraftingType.Player)
-        {
-            if (!CheckNearbyStation(currentStationType))
-            {
-                TogglePanel();
-            }
+            if (isOpen && currentRecipe != null) UpdateDetailView();
         }
     }
 
-    void TogglePanel()
+    // ★ 외부(PlayerInteraction)에서 호출하는 열기 함수
+    public void OpenCraftingMenu(CraftingType type)
     {
-        isOpen = !isOpen;
+        if (isOpen) return; // 이미 열려있으면 무시
 
-        if (isOpen)
-        {
-            DetectStationAndRefresh();
-        }
+        currentStationType = type;
+        isOpen = true;
+        craftingPanelRoot.SetActive(true);
 
-        craftingPanelRoot.SetActive(isOpen);
+        if (UIManager.Instance != null) UIManager.Instance.SetUIState(true);
 
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.SetUIState(isOpen);
-        }
-
-        if (isOpen)
-        {
-            currentRecipe = null;
-            ClearDetailView();
-        }
-    }
-
-    void DetectStationAndRefresh()
-    {
-        currentStationType = CraftingType.Player;
+        // 타이틀 설정
         string title = "제작 (기본)";
-
-        CraftingStation[] stations = FindObjectsOfType<CraftingStation>();
-
-        foreach (var station in stations)
-        {
-            if (station.IsPlayerInRange())
-            {
-                if (station.stationType == CraftingType.Furnace)
-                {
-                    currentStationType = CraftingType.Furnace;
-                    title = "화로";
-                    break;
-                }
-                else if (station.stationType == CraftingType.Workbench)
-                {
-                    currentStationType = CraftingType.Workbench;
-                    title = "제작대";
-                }
-            }
-        }
+        if (type == CraftingType.Workbench) title = "제작대";
+        else if (type == CraftingType.Furnace) title = "화로";
 
         if (panelTitleText != null) panelTitleText.text = title;
+
+        currentRecipe = null;
+        ClearDetailView();
         RefreshRecipeList(currentStationType);
     }
 
-    bool CheckNearbyStation(CraftingType type)
+    // 패널 닫기
+    public void ClosePanel()
     {
-        CraftingStation[] stations = FindObjectsOfType<CraftingStation>();
-        foreach (var station in stations)
-        {
-            if (station.stationType == type && station.IsPlayerInRange()) return true;
-        }
-        return false;
+        isOpen = false;
+        craftingPanelRoot.SetActive(false);
+        if (UIManager.Instance != null) UIManager.Instance.SetUIState(false);
     }
+
+    // ★ TogglePanel, DetectStationAndRefresh, CheckNearbyStation 함수들은 더 이상 필요 없으므로 삭제하거나 안 씀
 
     void RefreshRecipeList(CraftingType type)
     {
@@ -175,31 +124,18 @@ public class CraftingSystem : MonoBehaviour
             int currentCount = InventoryManager.Instance.GetItemCount(ing.item);
             int requiredCount = ing.count;
 
-            // ★ 치트 모드일 때는 항상 Cyan(하늘색), 아니면 초록/빨강
             string colorHex;
-            if (isCreativeMode)
-            {
-                colorHex = "#00FFFF"; // 치트 활성화 색상
-            }
-            else
-            {
-                colorHex = (currentCount >= requiredCount) ? "#00FF00" : "#FF0000";
-            }
+            if (isCreativeMode) colorHex = "#00FFFF";
+            else colorHex = (currentCount >= requiredCount) ? "#00FF00" : "#FF0000";
 
             sb.AppendLine($"{ing.item.itemName}: <color={colorHex}>{currentCount} / {requiredCount}</color>");
 
-            // ★ 치트가 꺼져있을 때만 재료 부족 검사
-            if (!isCreativeMode && currentCount < requiredCount)
-            {
-                canCraft = false;
-            }
+            if (!isCreativeMode && currentCount < requiredCount) canCraft = false;
         }
 
         descriptionText.text = sb.ToString();
-
         craftButton.interactable = canCraft;
 
-        // 버튼 텍스트 변경
         if (isCreativeMode) craftButtonText.text = "무료 제작 (Cheat)";
         else craftButtonText.text = canCraft ? "제작하기" : "재료 부족";
     }
@@ -217,7 +153,6 @@ public class CraftingSystem : MonoBehaviour
     {
         if (currentRecipe == null) return;
 
-        // ★ 치트가 꺼져있을 때만 재료 소모
         if (!isCreativeMode)
         {
             foreach (var ing in currentRecipe.ingredients)
@@ -227,17 +162,14 @@ public class CraftingSystem : MonoBehaviour
         }
 
         bool added = InventoryManager.Instance.AddItem(currentRecipe.resultItem, currentRecipe.resultCount);
-
         if (!added)
         {
             Transform playerPos = GameObject.FindGameObjectWithTag("Player").transform;
-
             InventoryManager.Instance.SpawnDroppedItem(
                 currentRecipe.resultItem,
                 currentRecipe.resultCount,
                 playerPos.position + playerPos.forward
             );
-
             Debug.Log("인벤토리가 꽉 차서 바닥에 버려졌습니다!");
         }
 

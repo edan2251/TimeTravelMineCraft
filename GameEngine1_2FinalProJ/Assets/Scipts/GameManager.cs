@@ -41,6 +41,7 @@ public class GameManager : MonoBehaviour
     public HashSet<Vector3Int> activeStabilizers = new HashSet<Vector3Int>();
     private Dictionary<MapType, HashSet<Vector3Int>> brokenBlocks = new Dictionary<MapType, HashSet<Vector3Int>>();
     private Dictionary<MapType, Dictionary<Vector3Int, int>> placedBlocks = new Dictionary<MapType, Dictionary<Vector3Int, int>>();
+    private Dictionary<MapType, Dictionary<Vector3Int, InventorySlot[]>> storageData = new Dictionary<MapType, Dictionary<Vector3Int, InventorySlot[]>>();
     public List<SaplingInfo> plantedSaplings = new List<SaplingInfo>();
 
     // ID 상수
@@ -57,6 +58,10 @@ public class GameManager : MonoBehaviour
         brokenBlocks[MapType.Morning] = new HashSet<Vector3Int>();
         brokenBlocks[MapType.Noon] = new HashSet<Vector3Int>();
         brokenBlocks[MapType.Night] = new HashSet<Vector3Int>();
+
+        storageData[MapType.Morning] = new Dictionary<Vector3Int, InventorySlot[]>();
+        storageData[MapType.Noon] = new Dictionary<Vector3Int, InventorySlot[]>();
+        storageData[MapType.Night] = new Dictionary<Vector3Int, InventorySlot[]>();
     }
 
     private void Start()
@@ -69,6 +74,41 @@ public class GameManager : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.T)) GoToNextTime();
         if (Input.GetKeyDown(KeyCode.F1)) GiveCheatItem();
+    }
+
+    // 1. 데이터 가져오기 (없으면 null 리턴)
+    public InventorySlot[] GetStorageData(MapType time, Vector3Int pos)
+    {
+        if (storageData.ContainsKey(time) && storageData[time].ContainsKey(pos))
+        {
+            return storageData[time][pos];
+        }
+        return null;
+    }
+
+    // 2. 데이터 저장하기 (또는 업데이트)
+    public void SaveStorageData(MapType time, Vector3Int pos, InventorySlot[] slots)
+    {
+        if (!storageData.ContainsKey(time))
+            storageData[time] = new Dictionary<Vector3Int, InventorySlot[]>();
+
+        if (storageData[time].ContainsKey(pos))
+        {
+            storageData[time][pos] = slots;
+        }
+        else
+        {
+            storageData[time].Add(pos, slots);
+        }
+    }
+
+    // 3. 데이터 삭제하기 (보관함을 곡괭이로 캤을 때)
+    public void RemoveStorageData(MapType time, Vector3Int pos)
+    {
+        if (storageData.ContainsKey(time) && storageData[time].ContainsKey(pos))
+        {
+            storageData[time].Remove(pos);
+        }
     }
 
     // 시간 이동

@@ -24,4 +24,7 @@ MonoBehaviour:
   dropChance: 1
   isTool: 1
   toolDamage: 5
+  handPositionOffset: {x: -0.49, y: 0.45, z: -0.21}
+  handRotationOffset: {x: 0, y: -90, z: 0}
+  handScale: 1
   dropItem: {fileID: 0}

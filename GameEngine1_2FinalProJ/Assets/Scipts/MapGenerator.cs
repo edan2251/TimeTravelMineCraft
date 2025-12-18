@@ -34,6 +34,8 @@ public class MapGenerator : MonoBehaviour
     public Transform playerTransform;
     public LayerMask blockLayer;
 
+    private GameObject barrierRoot;
+
     private int[,,] mapData;
     private float seedX, seedZ;
     private Vector3? lastPlayerPos = null;
@@ -46,6 +48,8 @@ public class MapGenerator : MonoBehaviour
     const int SAPLING_ID = 13;
     const int SUN_FRUIT_ID = 12;
     const int RUIN_BLOCK_ID = 6;
+    const int BEDROCK_ID = 18;
+    const int STORAGE_ID = 17;
 
     // 외부에서 호출: 맵 생성 시작
     public void GenerateMap(MapType type, bool savePosition = true)
@@ -79,6 +83,8 @@ public class MapGenerator : MonoBehaviour
         InitializeMapDataWithAir();
         ruinBlockCoords.Clear();
         foreach (Transform child in transform) Destroy(child.gameObject);
+        if(barrierRoot != null) Destroy(barrierRoot);
+        CreateWorldBarriers(); // 거대 벽 생성
 
         // 2. 데이터 생성
         FillMapData();
@@ -133,6 +139,49 @@ public class MapGenerator : MonoBehaviour
                     mapData[x, y, z] = AIR_ID;
     }
 
+    void CreateWorldBarriers()
+    {
+        barrierRoot = new GameObject("WorldBarriers");
+        barrierRoot.transform.parent = this.transform;
+
+        // 벽의 두께 (플레이어가 절대 못 뚫게 충분히 두껍게)
+        float thickness = 2f;
+        float centerX = width / 2f;
+        float centerZ = depth / 2f;
+        float centerY = worldHeight / 2f;
+
+        // 4면 벽 생성 정보 (위치, 크기)
+        Vector3[] positions = new Vector3[]
+        {
+            new Vector3(-thickness/2f - 0.5f, centerY, centerZ - 0.5f), // 왼쪽 (X -)
+            new Vector3(width - 0.5f + thickness/2f, centerY, centerZ - 0.5f), // 오른쪽 (X +)
+            new Vector3(centerX - 0.5f, centerY, -thickness/2f - 0.5f), // 아래쪽 (Z -)
+            new Vector3(centerX - 0.5f, centerY, depth - 0.5f + thickness/2f) // 위쪽 (Z +)
+        };
+
+        Vector3[] sizes = new Vector3[]
+        {
+            new Vector3(thickness, worldHeight * 2, depth), // 왼쪽
+            new Vector3(thickness, worldHeight * 2, depth), // 오른쪽
+            new Vector3(width, worldHeight * 2, thickness), // 아래쪽
+            new Vector3(width, worldHeight * 2, thickness)  // 위쪽
+        };
+
+        for (int i = 0; i < 4; i++)
+        {
+            GameObject wall = new GameObject($"Barrier_{i}");
+            wall.transform.parent = barrierRoot.transform;
+            wall.transform.position = positions[i];
+
+            // BoxCollider 추가
+            BoxCollider col = wall.AddComponent<BoxCollider>();
+            col.size = sizes[i];
+
+            // 물리 레이어 설정 (플레이어가 막히도록)
+            // 필요한 경우 wall.layer = LayerMask.NameToLayer("Obstacle"); 등을 추가
+        }
+    }
+
     // 펄린 노이즈 기반 지형 데이터 생성
     void FillMapData()
     {
@@ -142,49 +191,51 @@ public class MapGenerator : MonoBehaviour
         {
             for (int z = 0; z < depth; z++)
             {
+                // ★ 수정 1: 여기서 무조건 베드락을 깔던 코드를 삭제함.
+                // (아직 구멍인지 아닌지 모르기 때문)
+
+                // ★ 수정 2: 구멍 여부 변수를 미리 선언 (기본값 false = 땅)
+                bool shouldBeHole = false;
+
+                // 지형 높이 계산 (기존 동일)
                 float noiseVal = Mathf.PerlinNoise((x + seedX) / noiseScale, (z + seedZ) / noiseScale);
                 if (currentMapType == MapType.Noon) noiseVal *= 1.5f;
 
                 int height = Mathf.FloorToInt(noiseVal * terrainHeight);
+                if (height < 1) height = 1;
 
-                // ★★★ 밤(Night) 패턴 로직 수정: 다중 링(Ripple) ★★★
+                // --- 밤 로직 (기존 동일) ---
                 if (currentMapType == MapType.Night)
                 {
                     float distFromCenter = Vector2.Distance(new Vector2(x, z), centerPos);
-                    bool shouldBeHole = false;
 
-                    // 1. 중앙 안전지대 체크
+                    // 1. 중앙 안전지대
                     if (distFromCenter < centerSafeRadius)
                     {
-                        shouldBeHole = false; // 안전
+                        shouldBeHole = false;
                     }
                     else
                     {
-                        // 2. 링 패턴 계산 (거리 / 링두께)
-                        // 0번 링(중앙 직후): 공허
-                        // 1번 링: 땅
-                        // 2번 링: 공허 ...
+                        // 2. 링 패턴
                         float ringIndex = Mathf.Floor((distFromCenter - centerSafeRadius) / ringWidth);
 
-                        // 짝수 번째 링은 '공허', 홀수 번째 링은 '땅'
                         if (ringIndex % 2 == 0)
                         {
                             shouldBeHole = true; // 공허 링
                         }
                         else
                         {
-                            // 땅 링이지만, 작은 구멍(치즈) 뚫기
+                            // 땅 링이지만 치즈 구멍
                             float voidNoise = Mathf.PerlinNoise((x + seedX) * 0.15f, (z + seedZ) * 0.15f);
                             shouldBeHole = (voidNoise < nightVoidThreshold);
                         }
                     }
 
-                    // 3. 유적 주변 보호 (Override)
+                    // 3. 유적 주변 보호
                     if (GameManager.Instance != null)
                     {
                         foreach (Vector3Int ruinPos in GameManager.Instance.ruinPositions)
                         {
-                            // 유적 위치는 아직 Y가 0일 수 있으므로 X, Z 거리만 비교
                             if (Vector2.Distance(new Vector2(x, z), new Vector2(ruinPos.x, ruinPos.z)) < ruinIslandRadius)
                             {
                                 shouldBeHole = false; // 강제 땅
@@ -201,10 +252,25 @@ public class MapGenerator : MonoBehaviour
 
                     if (shouldBeHole) height = -1;
                 }
-                // ★★★ 밤 로직 끝 ★★★
+                // --- 밤 로직 끝 ---
 
-                for (int y = 0; y < worldHeight; y++)
+                // ★★★ 수정 3: 구멍 판정이 끝난 후 베드락 설치 결정 ★★★
+                if (shouldBeHole)
                 {
+                    // 구멍이면 바닥(0층)도 뚫어버림 (공기)
+                    mapData[x, 0, z] = AIR_ID;
+                }
+                else
+                {
+                    // 구멍이 아니면(땅이면) 바닥에 베드락 설치
+                    mapData[x, 0, z] = BEDROCK_ID;
+                }
+
+
+                // Y=1 부터 지형 생성 (기존 동일)
+                for (int y = 1; y < worldHeight; y++)
+                {
+                    // 유지기
                     if (GameManager.Instance != null && GameManager.Instance.activeStabilizers.Contains(new Vector3Int(x, y, z)))
                     {
                         mapData[x, y, z] = STABILIZER_ID;
@@ -320,7 +386,7 @@ public class MapGenerator : MonoBehaviour
             float rand = Random.value;
             if (rand < 0.05f) return 7; // Iron
             if (rand < 0.1f) return 8;  // Coal
-            if (y < 3) return 2;        // Bedrock/DeepStone
+            //if (y < 3) return 2;        // Bedrock/DeepStone
         }
 
         switch (currentMapType)
@@ -478,6 +544,36 @@ public class MapGenerator : MonoBehaviour
 
         if (GameManager.Instance != null)
         {
+            if (currentID == STORAGE_ID)
+            {
+                // 1. 삭제하기 전에 데이터를 먼저 가져온다.
+                InventorySlot[] savedSlots = GameManager.Instance.GetStorageData(currentMapType, coord);
+
+                if (savedSlots != null)
+                {
+                    // 2. 들어있는 아이템을 하나씩 꺼내서 바닥에 떨군다.
+                    foreach (var slot in savedSlots)
+                    {
+                        if (slot.itemData != null && slot.count > 0)
+                        {
+                            // 약간의 랜덤 위치를 더해서 아이템끼리 겹치지 않고 '폭발'하듯 나오게 함
+                            Vector3 dropPos = new Vector3(coord.x, coord.y, coord.z) + Vector3.up * 0.5f;
+                            Vector3 randomOffset = Random.insideUnitSphere * 0.5f;
+                            randomOffset.y = Mathf.Abs(randomOffset.y); // 위쪽으로만 튀게
+
+                            // InventoryManager의 드롭 함수 활용
+                            if (InventoryManager.Instance != null)
+                            {
+                                InventoryManager.Instance.SpawnDroppedItem(slot.itemData, slot.count, dropPos + randomOffset);
+                            }
+                        }
+                    }
+
+                    // 3. 아이템을 다 뱉었으니 데이터 삭제
+                    GameManager.Instance.RemoveStorageData(currentMapType, coord);
+                }
+            }
+
             if (GameManager.Instance.GetPlacedBlockID(currentMapType, coord.x, coord.y, coord.z) != AIR_ID)
                 GameManager.Instance.RemovePlacedBlockRecord(currentMapType, coord);
             else

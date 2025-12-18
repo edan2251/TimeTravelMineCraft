@@ -29,5 +29,10 @@ public class ItemData : ScriptableObject
     public bool isTool;
     public int toolDamage = 1;
 
+    [Header("Hand Visuals")]
+    public Vector3 handPositionOffset; // 위치 보정
+    public Vector3 handRotationOffset; // 회전 보정
+    public float handScale = 1.0f;     // 크기 보정
+
     public ItemData dropItem;
 }

@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4ad8342130f29af4f93b03d7989f67f8, type: 3}
-  m_Name: ITEM_12_SunBerry
+  m_Name: ITEM_18_BedRock
   m_EditorClassIdentifier: 
-  itemName: "\uD14C\uC591 \uC5F4\uB9E4"
-  icon: {fileID: 21300000, guid: 7f5175eac6ae3ca4e81c56c972f42859, type: 3}
+  itemName: "\uBCA0\uB4DC\uB85D"
+  icon: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
   itemType: 0
   maxStack: 32
-  dropModel: {fileID: 6164682021572067818, guid: 7cd8c6c8d88196246b336662819f012f, type: 3}
+  dropModel: {fileID: 6164682021572067818, guid: 0918c30a516a3d44abc91d5a4cb6f3db, type: 3}
   isPlaceable: 1
-  blockID: 12
+  blockID: 17
   isDestructible: 1
   dropsOnBreak: 1
   dropChance: 1
