@@ -9,12 +9,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2000551071858877428}
-  - component: {fileID: -5278979044594571151}
+  - component: {fileID: 6603409387793901863}
   - component: {fileID: 492006385140490514}
   - component: {fileID: 6184170788036279452}
   - component: {fileID: 1359219185844683933}
   m_Layer: 6
-  m_Name: 16_Tomoshibi
+  m_Name: 13_Sapling
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -35,7 +35,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &-5278979044594571151
+--- !u!114 &6603409387793901863
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -47,7 +47,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9060e6542957e940ad419cb6b67d385, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  myItemData: {fileID: 11400000, guid: 57c607bf1a364914197ac49fa39ed983, type: 2}
+  myItemData: {fileID: 11400000, guid: 9fc2368b05bf66140b3749953441dc80, type: 2}
   maxHP: 1
   currentHP: 0
 --- !u!33 &492006385140490514
@@ -78,7 +78,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: cefe117984aef2d4db77dd6e63d29401, type: 2}
+  - {fileID: 2100000, guid: a390f2d5363ef53488963e578b10ef42, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

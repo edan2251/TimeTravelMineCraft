@@ -12,13 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ad8342130f29af4f93b03d7989f67f8, type: 3}
   m_Name: ITEM_06_VoidStone
   m_EditorClassIdentifier: 
-  itemName: VoidStone
-  icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  itemName: "\uACF5\uD5C8\uC11D"
+  icon: {fileID: 21300000, guid: 3480d34be330553429f1717ed6ca7784, type: 3}
   itemType: 0
   maxStack: 32
   dropModel: {fileID: 4641873546236802992, guid: de40d4125b04ad744873e23c04bcc37f, type: 3}
   isPlaceable: 1
   blockID: 6
+  isDestructible: 1
+  dropsOnBreak: 1
+  dropChance: 1
   isTool: 0
   toolDamage: 1
   dropItem: {fileID: 0}

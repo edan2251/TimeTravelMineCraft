@@ -10,16 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4ad8342130f29af4f93b03d7989f67f8, type: 3}
-  m_Name: ITEM_13_NotGrowTree
+  m_Name: ITEM_13_Sapling
   m_EditorClassIdentifier: 
-  itemName: NotGrowTree
-  icon: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+  itemName: "\uBB18\uBAA9"
+  icon: {fileID: 21300000, guid: e1e8309ea687de347b2b497f6ec1e9bd, type: 3}
   itemType: 0
   maxStack: 32
   dropModel: {fileID: 6164682021572067818, guid: 5c2566fbb9f415e41a287ce17b562159, type: 3}
   isPlaceable: 1
   blockID: 13
+  isDestructible: 1
   dropsOnBreak: 1
+  dropChance: 1
   isTool: 0
   toolDamage: 1
   dropItem: {fileID: 0}

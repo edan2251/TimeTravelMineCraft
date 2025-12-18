@@ -12,13 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ad8342130f29af4f93b03d7989f67f8, type: 3}
   m_Name: ITEM_08_CoalOre
   m_EditorClassIdentifier: 
-  itemName: CoalOre
-  icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  itemName: "\uC11D\uD0C4 \uAD11\uC11D"
+  icon: {fileID: 21300000, guid: ad634725d11fd9844b87bc95552f70c1, type: 3}
   itemType: 0
   maxStack: 32
   dropModel: {fileID: 4641873546236802992, guid: d691745c0304eeb4da617dbe8c2ad7de, type: 3}
   isPlaceable: 0
   blockID: 8
+  isDestructible: 1
+  dropsOnBreak: 1
+  dropChance: 1
   isTool: 0
   toolDamage: 1
   dropItem: {fileID: 11400000, guid: 8234b00a82c2e164b8e619c337a56611, type: 2}

@@ -12,13 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ad8342130f29af4f93b03d7989f67f8, type: 3}
   m_Name: ITEM_07_IronOre
   m_EditorClassIdentifier: 
-  itemName: IronOre
-  icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  itemName: "\uCCA0 \uAD11\uC11D"
+  icon: {fileID: 21300000, guid: fe565eb85ee69d94a83936fb411b6db4, type: 3}
   itemType: 0
   maxStack: 32
   dropModel: {fileID: 5801738847966668720, guid: 49e33cff8d096e341890df090efe2429, type: 3}
   isPlaceable: 1
   blockID: 7
+  isDestructible: 1
+  dropsOnBreak: 1
+  dropChance: 1
   isTool: 0
   toolDamage: 1
   dropItem: {fileID: 0}
