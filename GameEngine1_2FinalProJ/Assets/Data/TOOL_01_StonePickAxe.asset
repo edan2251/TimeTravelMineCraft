@@ -23,7 +23,7 @@ MonoBehaviour:
   dropsOnBreak: 1
   dropChance: 1
   isTool: 1
-  toolDamage: 3
+  toolDamage: 5
   handPositionOffset: {x: -0.2, y: 0.27, z: -0.21}
   handRotationOffset: {x: 0, y: -90, z: 0}
   handScale: 1

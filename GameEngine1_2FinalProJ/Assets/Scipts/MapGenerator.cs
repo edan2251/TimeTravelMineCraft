@@ -57,6 +57,12 @@ public class MapGenerator : MonoBehaviour
         if (savePosition && playerTransform != null) lastPlayerPos = playerTransform.position;
         else lastPlayerPos = null;
 
+        if (seedX == 0 && seedZ == 0)
+        {
+            seedX = Random.Range(-10000f, 10000f);
+            seedZ = Random.Range(-10000f, 10000f);
+        }
+
         currentMapType = type;
         StopAllCoroutines();
         StartCoroutine(GenerateMapRoutine());

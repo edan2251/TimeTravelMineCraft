@@ -192,6 +192,11 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("GAME CLEAR!!");
         if (timeText != null) timeText.text = "GAME CLEAR!!";
+
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.ShowGameClear();
+        }
     }
 
     // 플레이어 사망 처리
@@ -266,6 +271,7 @@ public class GameManager : MonoBehaviour
             InventoryManager.Instance.AddItem(stabilizerItemData, 1);
     }
 
+    
     private void OnDrawGizmos()
     {
         if (!showGizmos) return;

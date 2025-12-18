@@ -49,7 +49,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   myItemData: {fileID: 11400000, guid: b05d5bc22a68f3248b5df80c382816a4, type: 2}
-  maxHP: 3
+  maxHP: 10
   currentHP: 0
   isUnbreakable: 0
 --- !u!33 &6844415610528302180

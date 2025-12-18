@@ -11,9 +11,25 @@ public class BlockBehavior : MonoBehaviour
 
     public bool isUnbreakable = false;
 
+    // ★ 수정: 렌더러가 하나가 아니라 여러 개일 수 있으니 배열로 변경
+    private Renderer[] myRenderers;
+    private Color[] originalColors; // 원래 색상들도 배열로 저장
+
     private void Start()
     {
         currentHP = maxHP;
+
+        // ★ 수정: 자식 오브젝트(GFX)들에 있는 모든 렌더러를 다 찾아옴
+        myRenderers = GetComponentsInChildren<Renderer>();
+
+        // 찾은 렌더러 개수만큼 원래 색상 저장소 생성
+        originalColors = new Color[myRenderers.Length];
+
+        for (int i = 0; i < myRenderers.Length; i++)
+        {
+            // 각 파츠의 원래 색깔을 기억해둠
+            originalColors[i] = myRenderers[i].material.color;
+        }
     }
 
     public bool OnHit(int damage)
@@ -27,6 +43,9 @@ public class BlockBehavior : MonoBehaviour
 
         currentHP -= damage;
 
+        // 색깔 업데이트
+        UpdateDamageColor();
+
         if (currentHP <= 0)
         {
             BreakAndDrop();
@@ -35,27 +54,41 @@ public class BlockBehavior : MonoBehaviour
         return false;
     }
 
+    void UpdateDamageColor()
+    {
+        // 렌더러가 없으면 패스
+        if (myRenderers == null || myRenderers.Length == 0) return;
+
+        // 체력 비율 계산
+        float ratio = (float)currentHP / (float)maxHP;
+
+        // ★ 수정: 모든 자식 렌더러들을 순회하며 색깔 변경
+        for (int i = 0; i < myRenderers.Length; i++)
+        {
+            if (myRenderers[i] != null)
+            {
+                // 각각 원래 자기 색깔을 기준으로 검게 변함
+                myRenderers[i].material.color = Color.Lerp(Color.black, originalColors[i], ratio);
+            }
+        }
+    }
+
     void BreakAndDrop()
     {
         if (myItemData != null)
         {
-            // 1. 아예 드롭 기능이 꺼져있는 경우 (예: 기반암 등)
             if (!myItemData.dropsOnBreak)
             {
                 Destroy(gameObject);
                 return;
             }
 
-            // 2. ★ 추가: 확률 체크 (꽝이면 드롭 안 함)
-            // Random.value는 0.0 ~ 1.0 사이의 랜덤값입니다.
-            // 예: dropChance가 0.3인데, 랜덤값이 0.8이 나왔다 -> 드롭 실패
             if (Random.value > myItemData.dropChance)
             {
                 Destroy(gameObject);
                 return;
             }
 
-            // 3. 드롭 아이템 결정 (설정된 게 없으면 자기 자신)
             ItemData dropTarget = (myItemData.dropItem != null) ? myItemData.dropItem : myItemData;
 
             if (InventoryManager.Instance != null)
